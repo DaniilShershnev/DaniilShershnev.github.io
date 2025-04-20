@@ -836,8 +836,16 @@ F(x) = \int_{a}^{b} f(x) \, dx
         const latexCode = editor.getValue();
         
         // Показываем индикатор загрузки
-        document.querySelector('.loading-overlay').style.display = 'flex';
-        document.getElementById('status').textContent = "Компиляция...";
+        const loadingOverlay = window.document.querySelector('.loading-overlay');
+        const statusElement = window.document.getElementById('status');
+        
+        if (loadingOverlay) {
+          loadingOverlay.style.display = 'flex';
+        }
+        
+        if (statusElement) {
+          statusElement.textContent = "Компиляция...";
+        }
         
         // Имитация процесса компиляции с задержкой (для демонстрации)
         setTimeout(() => {
@@ -848,12 +856,19 @@ F(x) = \int_{a}^{b} f(x) \, dx
             // Обновляем предпросмотр
             renderPdfPreview(parsedDocument);
             
-            document.getElementById('status').textContent = "Компиляция завершена";
+            if (statusElement) {
+              statusElement.textContent = "Компиляция завершена";
+            }
             
           } catch (error) {
-            document.getElementById('status').textContent = "Ошибка компиляции: " + error.message;
+            console.error("Ошибка компиляции:", error);
+            if (statusElement) {
+              statusElement.textContent = "Ошибка компиляции: " + error.message;
+            }
           } finally {
-            document.querySelector('.loading-overlay').style.display = 'none';
+            if (loadingOverlay) {
+              loadingOverlay.style.display = 'none';
+            }
           }
         }, 800);
       }
@@ -897,18 +912,23 @@ F(x) = \int_{a}^{b} f(x) \, dx
       }
       
       // Функция для рендеринга предпросмотра PDF
-      function renderPdfPreview(document) {
-        const preview = document.getElementById('pdf-preview');
+      function renderPdfPreview(docData) {
+        const preview = window.document.getElementById('pdf-preview');
+        
+        if (!preview) {
+          console.error('Элемент pdf-preview не найден');
+          return;
+        }
         
         // Создаем HTML-структуру для предпросмотра
         let html = `
-          <div class="pdf-title">${document.title}</div>
-          <div class="pdf-author">${document.author}</div>
-          <div class="pdf-date">${document.date}</div>
+          <div class="pdf-title">${docData.title}</div>
+          <div class="pdf-author">${docData.author}</div>
+          <div class="pdf-date">${docData.date}</div>
         `;
         
         // Обрабатываем содержимое секций
-        document.sections.forEach(section => {
+        docData.sections.forEach(section => {
           html += `<div class="pdf-section">${section.title}</div>`;
           
           // Заменяем LaTeX-команды на HTML
