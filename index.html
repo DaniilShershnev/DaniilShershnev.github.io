@@ -2254,3 +2254,437 @@ F(x) = \int_{a}^{b} f(x) \, dx
         
         // Создаем объединенный список макросов для отображения
         const displayMacros = {};
+
+
+
+// Создаем объединенный список макросов для отображения
+        const displayMacros = {};
+        
+        for (const category in macrosData) {
+          for (const key in macrosData[category]) {
+            if (!filter || key.toLowerCase().includes(filter)) {
+              displayMacros[key] = {
+                content: macrosData[category][key],
+                category: category,
+                isBuiltIn: category !== 'custom'
+              };
+            }
+          }
+        }
+        
+        // Если в списке есть макросы, отображаем их
+        if (Object.keys(displayMacros).length > 0) {
+          for (const key in displayMacros) {
+            const macroInfo = displayMacros[key];
+            
+            const macroItem = document.createElement('div');
+            macroItem.className = 'macro-item';
+            
+            const macroHeader = document.createElement('div');
+            macroHeader.style.display = 'flex';
+            macroHeader.style.flexDirection = 'column';
+            
+            const macroName = document.createElement('div');
+            macroName.style.fontWeight = 'bold';
+            macroName.textContent = key;
+            
+            const macroCategory = document.createElement('div');
+            macroCategory.style.fontSize = '12px';
+            macroCategory.style.color = '#666';
+            macroCategory.textContent = getCategoryName(macroInfo.category);
+            
+            macroHeader.appendChild(macroName);
+            macroHeader.appendChild(macroCategory);
+            
+            const macroActions = document.createElement('div');
+            macroActions.className = 'macro-actions';
+            
+            const insertBtn = document.createElement('button');
+            insertBtn.textContent = 'Вставить';
+            insertBtn.addEventListener('click', function() {
+              editor.replaceSelection(macroInfo.content);
+              editor.focus();
+              // Закрываем модальное окно
+              document.getElementById('macros-modal').style.display = 'none';
+            });
+            
+            macroActions.appendChild(insertBtn);
+            
+            // Для пользовательских макросов добавляем кнопки редактирования и удаления
+            if (!macroInfo.isBuiltIn) {
+              const editBtn = document.createElement('button');
+              editBtn.textContent = 'Ред.';
+              editBtn.addEventListener('click', function() {
+                document.getElementById('macro-name').value = key;
+                document.getElementById('macro-content').value = macroInfo.content;
+                document.getElementById('macro-category').value = 'custom';
+                
+                // Обновляем предпросмотр
+                const macroPreview = document.getElementById('macro-preview');
+                if (macroInfo.content.includes('$') || macroInfo.content.includes('\\begin{equation}')) {
+                  macroPreview.innerHTML = macroInfo.content
+                    .replace(/\\begin{equation}/g, '$$')
+                    .replace(/\\end{equation}/g, '$$');
+                  
+                  // Рендерим формулу
+                  if (typeof MathJax !== 'undefined') {
+                    MathJax.typesetPromise([macroPreview]);
+                  }
+                } else {
+                  macroPreview.textContent = macroInfo.content;
+                }
+              });
+              
+              const deleteBtn = document.createElement('button');
+              deleteBtn.textContent = 'Удалить';
+              deleteBtn.addEventListener('click', function() {
+                if (confirm(`Удалить макрос "${key}"?`)) {
+                  // Удаляем макрос
+                  delete userMacros[key];
+                  localStorage.setItem('latex-macros', JSON.stringify(userMacros));
+                  
+                  // Обновляем список
+                  renderMacrosList();
+                  // Обновляем боковую панель
+                  renderMacrosSidebar();
+                }
+              });
+              
+              macroActions.appendChild(editBtn);
+              macroActions.appendChild(deleteBtn);
+            }
+            
+            macroItem.appendChild(macroHeader);
+            macroItem.appendChild(macroActions);
+            
+            macroList.appendChild(macroItem);
+          }
+        } else {
+          // Если макросов нет или они не соответствуют фильтру
+          const emptyMessage = document.createElement('div');
+          emptyMessage.className = 'macro-item';
+          
+          if (filter) {
+            emptyMessage.textContent = `Нет макросов, соответствующих фильтру "${filter}"`;
+          } else {
+            emptyMessage.textContent = 'Нет сохраненных макросов';
+          }
+          
+          macroList.appendChild(emptyMessage);
+        }
+      }
+      
+      // Настройка слушателей для управления макросами
+      function setupMacrosManagement() {
+        const macrosModal = document.getElementById('macros-modal');
+        const closeBtn = document.querySelector('#macros-modal .close');
+        const addMacroBtn = document.getElementById('add-macro-btn');
+        const macroNameInput = document.getElementById('macro-name');
+        const macroContentInput = document.getElementById('macro-content');
+        const macroList = document.getElementById('macro-list');
+        const macroPreview = document.getElementById('macro-preview');
+        const macroFilter = document.getElementById('macro-filter');
+        
+        // Открываем модальное окно
+        document.getElementById('manage-macros-btn').addEventListener('click', function() {
+          macrosModal.style.display = 'block';
+          renderMacrosList();
+        });
+        
+        // Закрываем модальное окно
+        closeBtn.addEventListener('click', function() {
+          macrosModal.style.display = 'none';
+        });
+        
+        // Закрываем модальное окно при клике вне его
+        window.addEventListener('click', function(event) {
+          if (event.target === macrosModal) {
+            macrosModal.style.display = 'none';
+          }
+        });
+        
+        // Добавление макроса
+        addMacroBtn.addEventListener('click', function() {
+          const name = macroNameInput.value.trim();
+          const content = macroContentInput.value;
+          const category = document.getElementById('macro-category').value;
+          
+          if (name && content) {
+            // Получаем текущие макросы
+            const macros = JSON.parse(localStorage.getItem('latex-macros') || '{}');
+            macros[name] = content;
+            localStorage.setItem('latex-macros', JSON.stringify(macros));
+            
+            // Очищаем поля формы
+            macroNameInput.value = '';
+            macroContentInput.value = '';
+            macroPreview.innerHTML = '';
+            
+            // Обновляем список и боковую панель
+            renderMacrosList();
+            renderMacrosSidebar();
+          }
+        });
+        
+        // Предпросмотр формулы из макроса
+        macroContentInput.addEventListener('input', function() {
+          const content = this.value;
+          
+          // Если похоже на формулу, показываем предпросмотр
+          if (content.includes('$') || content.includes('\\begin{equation}')) {
+            macroPreview.innerHTML = content
+              .replace(/\\begin{equation}/g, '$$')
+              .replace(/\\end{equation}/g, '$$');
+            
+            // Запускаем MathJax для рендеринга формулы
+            if (typeof MathJax !== 'undefined') {
+              MathJax.typesetPromise([macroPreview]).catch(function (err) {
+                console.error('MathJax ошибка:', err);
+              });
+            }
+          } else {
+            macroPreview.textContent = content;
+          }
+        });
+        
+        // Фильтрация макросов
+        macroFilter.addEventListener('input', function() {
+          renderMacrosList();
+        });
+        
+        // Настройка боковой панели макросов
+        document.getElementById('toggle-macros-sidebar').addEventListener('click', function() {
+          const sidebar = document.getElementById('macro-sidebar');
+          sidebar.classList.toggle('open');
+          renderMacrosSidebar();
+        });
+        
+        document.getElementById('close-macros-sidebar').addEventListener('click', function() {
+          document.getElementById('macro-sidebar').classList.remove('open');
+        });
+        
+        // Поиск макросов в боковой панели
+        document.getElementById('macro-search-input').addEventListener('input', function() {
+          const searchTerm = this.value.toLowerCase();
+          const macroItems = document.querySelectorAll('.macro-quick-item');
+          
+          macroItems.forEach(item => {
+            const macroName = item.textContent.toLowerCase();
+            if (macroName.includes(searchTerm)) {
+              item.style.display = 'block';
+            } else {
+              item.style.display = 'none';
+            }
+          });
+          
+          // Скрываем пустые категории
+          document.querySelectorAll('.macro-category').forEach(category => {
+            const visibleItems = category.querySelectorAll('.macro-quick-item[style="display: block"]').length;
+            category.style.display = visibleItems > 0 ? 'block' : 'none';
+          });
+        });
+      }
+      
+      // ===== НАСТРОЙКИ =====
+      
+      // Настройка интерфейса настроек
+      function setupSettings() {
+        // Отображение/скрытие панели настроек
+        document.getElementById('settings-btn').addEventListener('click', function() {
+          const settingsPanel = document.querySelector('.settings-panel');
+          settingsPanel.style.display = settingsPanel.style.display === 'none' ? 'block' : 'none';
+        });
+        
+        // Переключатель автосохранения
+        document.getElementById('autosave-toggle').addEventListener('change', function() {
+          settings.autoSaveEnabled = this.checked;
+          saveSettings();
+        });
+        
+        // Переключатель автокомпиляции
+        document.getElementById('autocompile-toggle').addEventListener('change', function() {
+          settings.autoCompileEnabled = this.checked;
+          saveSettings();
+        });
+        
+        // Интервал автосохранения
+        document.getElementById('autosave-interval').addEventListener('change', function() {
+          const value = parseInt(this.value);
+          if (value >= 1 && value <= 30) {
+            settings.autoSaveInterval = value;
+            autoSaveDelay = value * 1000;
+            saveSettings();
+          }
+        });
+        
+        // Задержка автокомпиляции
+        document.getElementById('autocompile-delay').addEventListener('change', function() {
+          const value = parseInt(this.value);
+          if (value >= 1 && value <= 10) {
+            settings.autoCompileDelay = value;
+            autoCompileDelay = value * 1000;
+            saveSettings();
+          }
+        });
+      }
+      
+      // Сохранение настроек
+      function saveSettings() {
+        localStorage.setItem('latex-editor-settings', JSON.stringify(settings));
+      }
+      
+      // ===== УПРАВЛЕНИЕ ФАЙЛАМИ =====
+      
+      // Открытие модального окна файлов
+      document.getElementById('files-btn').addEventListener('click', function() {
+        document.getElementById('files-modal').style.display = 'block';
+        loadFilesList();
+      });
+      
+      // Закрытие модального окна файлов
+      document.querySelectorAll('#files-modal .close').forEach(function(closeBtn) {
+        closeBtn.addEventListener('click', function() {
+          document.getElementById('files-modal').style.display = 'none';
+        });
+      });
+      
+      // Закрытие модального окна при клике вне его
+      window.addEventListener('click', function(event) {
+        const modals = document.querySelectorAll('.modal');
+        modals.forEach(modal => {
+          if (event.target === modal) {
+            modal.style.display = 'none';
+          }
+        });
+      });
+      
+      // ===== СПРАВКА =====
+      
+      // Открытие модального окна справки
+      document.getElementById('help-btn').addEventListener('click', function() {
+        document.getElementById('help-modal').style.display = 'block';
+        renderCommandsList();
+      });
+      
+      // Закрытие модального окна справки
+      document.querySelector('#help-modal .close').addEventListener('click', function() {
+        document.getElementById('help-modal').style.display = 'none';
+      });
+      
+      // Отображение списка команд LaTeX
+      function renderCommandsList() {
+        const commandsList = document.getElementById('commands-list');
+        const searchInput = document.getElementById('command-search');
+        const searchTerm = searchInput.value.toLowerCase();
+        
+        commandsList.innerHTML = '';
+        
+        const filteredCommands = latexCommands.filter(cmd => 
+          cmd.name.toLowerCase().includes(searchTerm) || 
+          cmd.description.toLowerCase().includes(searchTerm)
+        );
+        
+        filteredCommands.forEach(cmd => {
+          const cmdItem = document.createElement('div');
+          cmdItem.className = 'command-item';
+          cmdItem.innerHTML = `
+            <div class="command-name">${cmd.name}</div>
+            <div class="command-description">${cmd.description}</div>
+          `;
+          
+          // Вставка команды в редактор
+          cmdItem.addEventListener('click', function() {
+            editor.replaceSelection(cmd.name);
+            editor.focus();
+            document.getElementById('help-modal').style.display = 'none';
+          });
+          
+          commandsList.appendChild(cmdItem);
+        });
+        
+        if (filteredCommands.length === 0) {
+          commandsList.innerHTML = '<div style="padding: 10px; color: #666;">Нет команд, соответствующих поисковому запросу</div>';
+        }
+      }
+      
+      // Поиск команд
+      document.getElementById('command-search').addEventListener('input', function() {
+        renderCommandsList();
+      });
+      
+      // ===== ИНИЦИАЛИЗАЦИЯ И ЗАГРУЗКА ДОКУМЕНТА =====
+      
+      // Загрузка сохраненного документа при старте
+      function initializeEditor() {
+        // Проверяем, есть ли сохраненные файлы
+        const fileKeys = Object.keys(localStorage).filter(key => key.startsWith('latex-document-'));
+        
+        if (fileKeys.length > 0) {
+          // Загружаем первый файл из списка
+          currentFileName = fileKeys[0].replace('latex-document-', '');
+          const savedDocument = localStorage.getItem(fileKeys[0]);
+          
+          if (savedDocument) {
+            editor.setValue(savedDocument);
+            lastSavedContent = savedDocument;
+            document.getElementById('current-file').textContent = `Файл: ${currentFileName}`;
+          }
+        } else {
+          // Если нет сохраненных файлов, создаем новый
+          localStorage.setItem('latex-document-document1', editor.getValue());
+          lastSavedContent = editor.getValue();
+        }
+        
+        // Инициализация макросов
+        initMacros();
+        
+        // Настройка автосохранения
+        setupAutoSave();
+        
+        // Настройка совместной работы
+        setupCollaboration();
+        
+        // Настройка управления макросами
+        setupMacrosManagement();
+        
+        // Настройка управления настройками
+        setupSettings();
+        
+        // Компилируем при первой загрузке
+        setTimeout(compileLatex, 500);
+        
+        // Принудительное обновление редактора и компиляция (для исправления проблем отображения)
+        setTimeout(function() {
+          if (editor) {
+            console.log("Принудительное обновление редактора");
+            editor.refresh();
+            compileLatex();
+          }
+        }, 1000);
+      }
+      
+      // Скачивание PDF
+      document.getElementById('download-pdf').addEventListener('click', function() {
+        alert('PDF файл успешно скомпилирован и готов к скачиванию.\nВ реальном приложении здесь будет загрузка настоящего PDF файла.');
+      });
+      
+      // Инициализация редактора при загрузке
+      initializeEditor();
+      
+      // Добавляем код для исправления проблем отображения
+      window.addEventListener('resize', function() {
+        if (editor) {
+          editor.refresh();
+        }
+      });
+      
+      // Проверка работы библиотек и исправление ошибок
+      console.log("Проверка загрузки библиотек:");
+      console.log("- CodeMirror:", typeof CodeMirror !== 'undefined');
+      console.log("- MathJax:", typeof MathJax !== 'undefined');
+      console.log("- Firebase:", typeof firebase !== 'undefined');
+      console.log("- Yjs:", typeof Y !== 'undefined');
+    });
+  </script>
+</body>
+</html>
