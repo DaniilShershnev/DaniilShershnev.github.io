@@ -1,4 +1,673 @@
-<!DOCTYPE html>
+<div class="modal-content">
+      <span class="close">&times;</span>
+      <h2>Управление файлами</h2>
+      <div class="form-group">
+        <label for="new-file-name">Новый файл:</label>
+        <div style="display: flex;">
+          <input type="text" id="new-file-name" placeholder="Имя файла (например: document2)" style="flex: 1;">
+          <button id="create-file-btn" style="margin-left: 10px;">Создать</button>
+        </div>
+      </div>
+      
+      <h3 style="margin-top: 20px;">Ваши файлы</h3>
+      <div class="file-list" id="file-list">
+        <!-- Здесь будет список файлов -->
+      </div>
+    </div>
+  </div>
+  
+  <!-- Модальное окно для списка активных пользователей -->
+  <div id="users-modal" class="modal">
+    <div class="modal-content">
+      <span class="close">&times;</span>
+      <h2>Активные пользователи</h2>
+      
+      <div class="active-users-container" id="active-users">
+        <!-- Здесь будет список активных пользователей -->
+        <p>Загрузка списка пользователей...</p>
+      </div>
+      
+      <div class="form-group" style="margin-top: 20px;">
+        <label for="change-username">Изменить ваше имя:</label>
+        <div style="display: flex;">
+          <input type="text" id="change-username" placeholder="Ваше имя" style="flex: 1;">
+          <button id="update-username-btn" style="margin-left: 10px;">Обновить</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Модальное окно справки -->
+  <div id="help-modal" class="modal">
+    <div class="modal-content" style="max-width: 700px; width: 70%;">
+      <span class="close">&times;</span>
+      <h2>Справка по LaTeX</h2>
+      
+      <div style="margin-bottom: 15px;">
+        <input type="text" id="command-search" placeholder="Поиск команд LaTeX..." style="width: 100%;">
+      </div>
+      
+      <div class="commands-list" id="commands-list">
+        <!-- Здесь будет список команд и их описаний -->
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Дождемся загрузки всех ресурсов
+    document.addEventListener('DOMContentLoaded', function() {
+      // Глобальные переменные
+      let editor;
+      let isCollaborationActive = true; // По умолчанию включено
+      let firebaseApp = null;
+      let firebaseDB = null;
+      let currentSessionId = null;
+      let lastSavedContent = '';
+      let autoSaveTimer = null;
+      let autoCompileTimer = null;
+      let syncTimer = null;
+      let autoSaveDelay = 3000; // 3 секунды
+      let autoCompileDelay = 2000; // 2 секунды
+      let syncDelay = 1000; // 1 секунда
+      let isTyping = false;
+      let lastTypingTime = 0;
+      let isInitialLoad = true;
+      let currentFileName = 'document1.tex';
+      let currentUsername = 'Пользователь';
+      let activeUsers = {};
+      
+      // Настройки
+      let settings = {
+        autoSaveEnabled: true,
+        autoCompileEnabled: false,
+        realtimeEnabled: true,
+        autoSaveInterval: 3, // в секундах
+        autoCompileDelay: 2,  // в секундах
+        syncDelay: 1 // в секундах
+      };
+      
+      // Загрузка настроек из localStorage
+      if (localStorage.getItem('latex-editor-settings')) {
+        try {
+          settings = JSON.parse(localStorage.getItem('latex-editor-settings'));
+          // Обновляем интерфейс настроек
+          document.getElementById('autosave-toggle').checked = settings.autoSaveEnabled;
+          document.getElementById('autocompile-toggle').checked = settings.autoCompileEnabled;
+          document.getElementById('realtime-toggle').checked = settings.realtimeEnabled !== false;
+          document.getElementById('autosave-interval').value = settings.autoSaveInterval;
+          document.getElementById('autocompile-delay').value = settings.autoCompileDelay;
+          document.getElementById('sync-delay').value = settings.syncDelay || 1;
+          
+          autoSaveDelay = settings.autoSaveInterval * 1000;
+          autoCompileDelay = settings.autoCompileDelay * 1000;
+          syncDelay = (settings.syncDelay || 1) * 1000;
+          isCollaborationActive = settings.realtimeEnabled !== false;
+        } catch (e) {
+          console.error('Ошибка при загрузке настроек:', e);
+        }
+      }
+      
+      // Загрузка имени пользователя
+      if (localStorage.getItem('latex-editor-username')) {
+        currentUsername = localStorage.getItem('latex-editor-username');
+        document.getElementById('username-input').value = currentUsername;
+      }
+      
+      // Генерация случайного ID
+      function generateId(length = 8) {
+        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+        let result = '';
+        for (let i = 0; i < length; i++) {
+          result += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+        return result;
+      }
+      
+      // Получение ID документа на основе имени файла
+      function getDocumentId(fileName) {
+        // Используем имя файла как основу для ID документа
+        return fileName.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+      }
+      
+      // LaTeX команды для подсказок
+      const latexCommands = [
+        { name: '\\section{}', description: 'Создает новый раздел документа' },
+        { name: '\\subsection{}', description: 'Создает подраздел документа' },
+        { name: '\\begin{equation}', description: 'Начало окружения для выделенного уравнения' },
+        { name: '\\end{equation}', description: 'Конец окружения для выделенного уравнения' },
+        { name: '\\begin{itemize}', description: 'Начало ненумерованного списка' },
+        { name: '\\end{itemize}', description: 'Конец ненумерованного списка' },
+        { name: '\\begin{enumerate}', description: 'Начало нумерованного списка' },
+        { name: '\\end{enumerate}', description: 'Конец нумерованного списка' },
+        { name: '\\item', description: 'Элемент списка' },
+        { name: '\\textbf{}', description: 'Жирный текст' },
+        { name: '\\textit{}', description: 'Курсивный текст' },
+        { name: '\\underline{}', description: 'Подчеркнутый текст' },
+        { name: '\\emph{}', description: 'Выделенный текст (обычно курсивом)' },
+        { name: '\\cite{}', description: 'Цитирование источника из библиографии' },
+        { name: '\\footnote{}', description: 'Добавление сноски' },
+        { name: '\\label{}', description: 'Метка для перекрестной ссылки' },
+        { name: '\\ref{}', description: 'Ссылка на метку' },
+        { name: '\\pageref{}', description: 'Ссылка на страницу с меткой' },
+        { name: '\\usepackage{}', description: 'Подключение пакета' },
+        { name: '\\includegraphics{}', description: 'Вставка изображения' },
+        { name: '\\frac{}{}', description: 'Дробь (числитель/знаменатель)' },
+        { name: '\\sqrt{}', description: 'Квадратный корень' },
+        { name: '\\sum', description: 'Знак суммы' },
+        { name: '\\int', description: 'Знак интеграла' },
+        { name: '\\prod', description: 'Знак произведения' },
+        { name: '\\lim', description: 'Предел' },
+        { name: '\\alpha', description: 'Греческая буква альфа (α)' },
+        { name: '\\beta', description: 'Греческая буква бета (β)' },
+        { name: '\\gamma', description: 'Греческая буква гамма (γ)' },
+        { name: '\\delta', description: 'Греческая буква дельта (δ)' },
+        { name: '\\epsilon', description: 'Греческая буква эпсилон (ε)' },
+        { name: '\\theta', description: 'Греческая буква тета (θ)' }
+      ];
+      
+      // Предустановленные макросы
+      const presetMacros = {
+        math: {
+          'frac': '\\frac{a}{b}',
+          'sqrt': '\\sqrt{x}',
+          'sum': '\\sum_{i=1}^{n} i',
+          'int': '\\int_{a}^{b} f(x) \\, dx',
+          'limit': '\\lim_{x \\to \\infty} f(x)',
+          'matrix': '\\begin{pmatrix}\na & b \\\\\nc & d\n\\end{pmatrix}'
+        },
+        structure: {
+          'chapter': '\\chapter{Название главы}',
+          'section': '\\section{Название раздела}',
+          'subsection': '\\subsection{Название подраздела}',
+          'subsubsection': '\\subsubsection{Название подподраздела}',
+          'paragraph': '\\paragraph{Название абзаца}',
+          'label': '\\label{tag:name}'
+        },
+        environments: {
+          'theorem': '\\begin{theorem}\n  Утверждение теоремы.\n\\end{theorem}',
+          'proof': '\\begin{proof}\n  Доказательство.\n\\end{proof}',
+          'figure': '\\begin{figure}[h]\n  \\centering\n  \\includegraphics[width=0.7\\textwidth]{filename}\n  \\caption{Подпись к рисунку}\n  \\label{fig:label}\n\\end{figure}',
+          'table': '\\begin{table}[h]\n  \\centering\n  \\begin{tabular}{|c|c|}\n    \\hline\n    A & B \\\\\n    \\hline\n    C & D \\\\\n    \\hline\n  \\end{tabular}\n  \\caption{Подпись к таблице}\n  \\label{tab:label}\n\\end{table}',
+          'align': '\\begin{align}\n  a &= b + c \\\\\n  &= d + e\n\\end{align}'
+        },
+        custom: {}
+      };
+      
+      // Инициализация редактора CodeMirror с поддержкой автодополнения
+      editor = CodeMirror.fromTextArea(document.getElementById('editor'), {
+        mode: "stex",
+        lineNumbers: true,
+        lineWrapping: true,
+        indentUnit: 2,
+        tabSize: 2,
+        autofocus: true,
+        matchBrackets: true,
+        autoCloseBrackets: true,
+        extraKeys: {
+          "Ctrl-Enter": function() { compileLatex(); },
+          "Ctrl-Space": function(cm) { 
+            showCommandHints(cm); 
+          },
+          "Tab": function(cm) {
+            // Проверка для активации макроса
+            const cursor = cm.getCursor();
+            const line = cm.getLine(cursor.line);
+            const textBeforeCursor = line.substring(0, cursor.ch);
+            
+            // Проверяем, есть ли макрос для введенного текста
+            const macros = JSON.parse(localStorage.getItem('latex-macros') || '{}');
+            let macroFound = false;
+            
+            for (const key in macros) {
+              if (textBeforeCursor.endsWith(key)) {
+                // Удаляем триггер и вставляем содержимое макроса
+                const from = {
+                  line: cursor.line,
+                  ch: cursor.ch - key.length
+                };
+                cm.replaceRange(macros[key], from, cursor);
+                macroFound = true;
+                break;
+              }
+            }
+            
+            if (!macroFound) {
+              // Если макрос не найден, вставляем обычный таб
+              cm.replaceSelection("  ");
+            }
+          }
+        }
+      });
+      
+      // Функция для показа подсказок команд LaTeX
+      function showCommandHints(cm) {
+        const cursor = cm.getCursor();
+        const line = cm.getLine(cursor.line);
+        const textBeforeCursor = line.substring(0, cursor.ch);
+        
+        // Находим последний символ "\" перед курсором
+        const lastBackslashPos = textBeforeCursor.lastIndexOf('\\');
+        
+        if (lastBackslashPos !== -1) {
+          const partialCommand = textBeforeCursor.substring(lastBackslashPos);
+          
+          // Фильтруем команды, соответствующие частичному вводу
+          const matchingCommands = latexCommands.filter(cmd => 
+            cmd.name.toLowerCase().startsWith(partialCommand.toLowerCase())
+          );
+          
+          if (matchingCommands.length > 0) {
+            // Позиция для отображения подсказки
+            const cursorCoords = cm.cursorCoords(true);
+            const hintTooltip = document.getElementById('hint-tooltip');
+            
+            hintTooltip.innerHTML = '';
+            matchingCommands.forEach((cmd, index) => {
+              const cmdElement = document.createElement('div');
+              cmdElement.classList.add('command-item');
+              cmdElement.innerHTML = `
+                <div class="command-name">${cmd.name}</div>
+                <div class="command-description">${cmd.description}</div>
+              `;
+              
+              // Вставка команды при клике
+              cmdElement.addEventListener('click', function() {
+                const from = {
+                  line: cursor.line,
+                  ch: lastBackslashPos
+                };
+                cm.replaceRange(cmd.name, from, cursor);
+                hideHintTooltip();
+              });
+              
+              hintTooltip.appendChild(cmdElement);
+            });
+            
+            // Отображаем подсказку
+            hintTooltip.style.display = 'block';
+            hintTooltip.style.left = `${cursorCoords.left}px`;
+            hintTooltip.style.top = `${cursorCoords.top + 20}px`;
+            
+            // Закрываем подсказку при любом клике или нажатии клавиши
+            document.addEventListener('click', hideHintTooltip);
+            cm.on('keydown', hideHintTooltip);
+          }
+        }
+      }
+      
+      // Скрытие подсказки
+      function hideHintTooltip() {
+        const hintTooltip = document.getElementById('hint-tooltip');
+        hintTooltip.style.display = 'none';
+        document.removeEventListener('click', hideHintTooltip);
+        editor.off('keydown', hideHintTooltip);
+      }
+      
+      // Инициализация Firebase (заглушка - для реальной работы нужны реальные настройки)
+      function initFirebase() {
+        // В реальном приложении тут будет настоящая инициализация Firebase
+        console.log("Firebase имитация инициализирована");
+        
+        // Имитация объектов Firebase для тестирования
+        firebaseApp = { name: "demo-app" };
+        firebaseDB = {
+          ref: (path) => ({ 
+            set: (data) => console.log(`Firebase: установка данных по пути ${path}`, data),
+            update: (data) => console.log(`Firebase: обновление данных по пути ${path}`, data),
+            onDisconnect: () => ({ remove: () => {} }),
+            child: (childPath) => ({
+              set: (data) => console.log(`Firebase: установка данных по пути ${path}/${childPath}`, data),
+              onDisconnect: () => ({ remove: () => {} })
+            }),
+            on: (event, callback) => {
+              console.log(`Firebase: слушаем событие ${event} по пути ${path}`); 
+              if (event === 'value' && path.includes('documents')) {
+                // Имитация получения данных документа
+                setTimeout(() => callback({ 
+                  val: () => ({ content: editor.getValue() }) 
+                }), 500);
+              } else if (event === 'value' && path.includes('users')) {
+                // Имитация получения списка пользователей
+                setTimeout(() => callback({ 
+                  val: () => activeUsers 
+                }), 500);
+              } else if (event === 'child_added') {
+                // Имитация добавления пользователя
+                setTimeout(() => {
+                  const userId = generateId(8);
+                  callback({
+                    key: userId,
+                    val: () => ({ name: `Гость ${userId.substring(0, 4)}` })
+                  });
+                }, 1000);
+              } else if (event === 'child_removed') {
+                // Имитация удаления пользователя
+                setTimeout(() => {
+                  const userId = Object.keys(activeUsers)[0];
+                  if (userId) {
+                    callback({
+                      key: userId,
+                      val: () => activeUsers[userId]
+                    });
+                    delete activeUsers[userId];
+                  }
+                }, 5000);
+              }
+            }
+          })
+        };
+        
+        // Изменяем индикатор
+        document.querySelector('.collaboration-status').classList.remove('inactive');
+        document.querySelector('.collaboration-status').classList.add('active');
+        document.getElementById('collaboration-text').textContent = "Совместное редактирование активно";
+        
+        return true;
+      }
+      
+      // Функция для настройки совместного редактирования при открытии файла
+      function setupRealtimeEditing(fileName) {
+        if (!settings.realtimeEnabled) {
+          document.querySelector('.collaboration-status').classList.remove('active');
+          document.querySelector('.collaboration-status').classList.add('inactive');
+          document.getElementById('collaboration-text').textContent = "Совместное редактирование отключено";
+          return false;
+        }
+        
+        if (!initFirebase()) return false;
+        
+        const documentId = getDocumentId(fileName);
+        currentSessionId = documentId;
+        
+        console.log(`Настройка совместного редактирования для документа: ${fileName} (ID: ${documentId})`);
+        
+        // Устанавливаем статус подключения
+        isCollaborationActive = true;
+        
+        // Присоединяемся к документу
+        joinDocument(documentId);
+        
+        // Обновляем интерфейс
+        document.getElementById('session-id').textContent = documentId;
+        document.getElementById('session-info').style.display = 'flex';
+        
+        return documentId;
+      }
+      
+      // Присоединение к документу
+      function joinDocument(documentId) {
+        if (!isCollaborationActive || !firebaseDB) return;
+        
+        // Ссылка на данные документа
+        const docRef = firebaseDB.ref('documents/' + documentId);
+        
+        // Настройка слушателя изменений с удаленных клиентов
+        docRef.on('value', (snapshot) => {
+          const data = snapshot.val();
+          if (!data) {
+            // Если документ не существует, создаем его
+            docRef.set({
+              content: editor.getValue(),
+              createdAt: new Date().toISOString(),
+              createdBy: currentUsername,
+              lastModified: new Date().toISOString(),
+              lastEditor: currentUsername
+            });
+            return;
+          }
+          
+          const remoteContent = data.content;
+          
+          // Обновляем содержимое редактора только если получили новое содержимое от другого пользователя
+          if (remoteContent && remoteContent !== editor.getValue() && remoteContent !== lastSavedContent) {
+            console.log('Получены удаленные изменения');
+            
+            // Запоминаем позицию курсора
+            const cursor = editor.getCursor();
+            
+            // Отключаем обработчик изменений, чтобы избежать рекурсии
+            editor.off("change", handleEditorChanges);
+            
+            // Обновляем содержимое
+            editor.setValue(remoteContent);
+            
+            // Восстанавливаем позицию курсора
+            editor.setCursor(cursor);
+            
+            // Обновляем lastSavedContent
+            lastSavedContent = remoteContent;
+            
+            // Восстанавливаем обработчик изменений
+            editor.on("change", handleEditorChanges);
+            
+            // Обновляем превью если включена автокомпиляция
+            if (settings.autoCompileEnabled) {
+              compileLatex();
+            }
+            
+            // Обновляем статус
+            document.getElementById('status').textContent = "Получены изменения";
+            setTimeout(() => {
+              document.getElementById('status').textContent = "Готово";
+            }, 2000);
+          }
+        });
+        
+        // Ссылка на пользователей этого документа
+        const usersRef = firebaseDB.ref('documents/' + documentId + '/users');
+        
+        // Добавляем себя в список активных пользователей
+        const userRef = usersRef.child(generateId(10));
+        userRef.set({
+          name: currentUsername,
+          joinedAt: new Date().toISOString(),
+          lastActive: new Date().toISOString()
+        });
+        
+        // Удаляем себя из списка при отключении
+        userRef.onDisconnect().remove();
+        
+        // Слушаем изменения в списке пользователей
+        usersRef.on('child_added', (snapshot) => {
+          const userId = snapshot.key;
+          const userData = snapshot.val();
+          
+          // Добавляем пользователя в локальный список
+          activeUsers[userId] = userData;
+          
+          // Обновляем интерфейс
+          updateActiveUsersList();
+        });
+        
+        usersRef.on('child_removed', (snapshot) => {
+          const userId = snapshot.key;
+          
+          // Удаляем пользователя из локального списка
+          delete activeUsers[userId];
+          
+          // Обновляем интерфейс
+          updateActiveUsersList();
+        });
+        
+        // Обновляем статус "последней активности" пользователя каждые 30 секунд
+        setInterval(() => {
+          if (isCollaborationActive && userRef) {
+            userRef.update({
+              lastActive: new Date().toISOString()
+            });
+          }
+        }, 30000);
+      }
+      
+      // Обработчик изменений в редакторе для синхронизации
+      function handleEditorChanges() {
+        // Отмечаем, что пользователь печатает
+        isTyping = true;
+        lastTypingTime = Date.now();
+        
+        // Сбрасываем предыдущий таймер синхронизации
+        if (syncTimer) {
+          clearTimeout(syncTimer);
+        }
+        
+        // Устанавливаем новый таймер для синхронизации
+        if (isCollaborationActive && settings.realtimeEnabled) {
+          syncTimer = setTimeout(() => {
+            // Проверяем, прошло ли достаточно времени с последнего ввода
+            if (Date.now() - lastTypingTime >= syncDelay) {
+              isTyping = false;
+              syncContent();
+            }
+          }, syncDelay);
+        }
+        
+        // Сбрасываем предыдущий таймер автосохранения
+        if (autoSaveTimer) {
+          clearTimeout(autoSaveTimer);
+        }
+        
+        // Устанавливаем новый таймер для автосохранения
+        if (settings.autoSaveEnabled) {
+          autoSaveTimer = setTimeout(() => {
+            // Проверяем, прошло ли достаточно времени с последнего ввода
+            if (Date.now() - lastTypingTime >= autoSaveDelay) {
+              isTyping = false;
+              autoSave();
+            }
+          }, autoSaveDelay);
+        }
+        
+        // Сбрасываем предыдущий таймер автокомпиляции
+        if (autoCompileTimer) {
+          clearTimeout(autoCompileTimer);
+        }
+        
+        // Устанавливаем новый таймер для автокомпиляции
+        if (settings.autoCompileEnabled) {
+          autoCompileTimer = setTimeout(() => {
+            // Показываем индикатор автокомпиляции
+            const autocompileIndicator = document.getElementById('autocompile-indicator');
+            autocompileIndicator.classList.add('show');
+            
+            compileLatex();
+            
+            // Скрываем индикатор через некоторое время
+            setTimeout(() => {
+              autocompileIndicator.classList.remove('show');
+            }, 2000);
+          }, autoCompileDelay);
+        }
+      }
+      
+      // Функция для синхронизации содержимого с Firebase
+      function syncContent() {
+        if (!isCollaborationActive || !firebaseDB || !currentSessionId) return;
+        
+        const content = editor.getValue();
+        
+        // Проверяем, изменился ли контент с последней синхронизации
+        if (content !== lastSavedContent) {
+          console.log('Синхронизация изменений...');
+          
+          // Обновляем Firebase
+          firebaseDB.ref('documents/' + currentSessionId).update({
+            content: content,
+            lastModified: new Date().toISOString(),
+            lastEditor: currentUsername
+          });
+          
+          lastSavedContent = content;
+          
+          // Показываем индикатор синхронизации
+          const autosaveIndicator = document.getElementById('autosave-indicator');
+          autosaveIndicator.textContent = "Синхронизация...";
+          autosaveIndicator.classList.add('show');
+          
+          // Обновляем статус
+          document.getElementById('status').textContent = "Синхронизация...";
+          
+          // Скрываем индикатор через некоторое время
+          setTimeout(() => {
+            autosaveIndicator.classList.remove('show');
+            autosaveIndicator.textContent = "Автосохранение...";
+            document.getElementById('status').textContent = "Готово";
+          }, 2000);
+        }
+      }
+      
+      // Обновление списка активных пользователей
+      function updateActiveUsersList() {
+        const activeUsersList = document.getElementById('active-users');
+        if (!activeUsersList) return;
+        
+        // Очищаем текущий список
+        activeUsersList.innerHTML = '';
+        
+        // Добавляем всех активных пользователей
+        for (const userId in activeUsers) {
+          const userData = activeUsers[userId];
+          const userElement = document.createElement('div');
+          userElement.className = 'active-user';
+          
+          // Получаем первую букву имени для аватарки
+          const firstLetter = userData.name ? userData.name.charAt(0).toUpperCase() : 'Г';
+          
+          // Генерируем случайный цвет для аватарки на основе userId
+          const userColor = getUserColor(userId);
+          
+          userElement.innerHTML = `
+            <span class="user-avatar" style="background-color: ${userColor};">${firstLetter}</span>
+            <span>${userData.name || 'Гость'}</span>
+          `;
+          
+          activeUsersList.appendChild(userElement);
+        }
+        
+        // Если список пуст
+        if (Object.keys(activeUsers).length === 0) {
+          activeUsersList.innerHTML = '<p>Нет активных пользователей</p>';
+        }
+      }
+      
+      // Генерация цвета для пользователя
+      function getUserColor(userId) {
+        const colors = [
+          '#3498db', '#2ecc71', '#e74c3c', '#f39c12', '#9b59b6', 
+          '#1abc9c', '#d35400', '#c0392b', '#16a085', '#8e44ad'
+        ];
+        
+        // Хеш-функция для получения индекса цвета
+        let hash = 0;
+        for (let i = 0; i < userId.length; i++) {
+          hash = userId.charCodeAt(i) + ((hash << 5) - hash);
+        }
+        
+        return colors[Math.abs(hash) % colors.length];
+      }
+      
+      // ===== УПРАВЛЕНИЕ ФАЙЛАМИ =====
+      
+      // Загрузка списка файлов
+      function loadFilesList() {
+        const fileList = document.getElementById('file-list');
+        fileList.innerHTML = '';
+        
+        // Получаем список файлов из localStorage
+        const fileKeys = Object.keys(localStorage).filter(key => key.startsWith('latex-document-'));
+        
+        // Если нет файлов, создаем первый файл
+        if (fileKeys.length === 0) {
+          localStorage.setItem('latex-document-document1', editor.getValue());
+          fileKeys.push('latex-document-document1');
+        }
+        
+        // Отображаем файлы в списке
+        fileKeys.forEach(key => {
+          const fileName = key.replace('latex-document-', '');
+          const fileItem = document.createElement('div');
+          fileItem.className = 'file-item';
+          if (fileName === currentFileName) {
+            file<!DOCTYPE html>
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
@@ -585,21 +1254,29 @@
       margin-top: 2px;
     }
     
-    .invite-link {
-      display: block;
-      padding: 8px;
-      background-color: #f5f5f5;
+    .active-users-container {
+      background-color: #f0f8ff;
       border-radius: 4px;
+      padding: 10px;
       margin-top: 10px;
-      word-break: break-all;
-      font-family: monospace;
     }
     
-    .copy-btn {
-      float: right;
-      padding: 2px 5px;
+    .active-user {
+      display: flex;
+      align-items: center;
+      margin-bottom: 5px;
+    }
+    
+    .user-avatar {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background-color: #3498db;
+      color: white;
+      text-align: center;
+      line-height: 24px;
       font-size: 12px;
-      margin-left: 5px;
+      margin-right: 8px;
     }
     
     /* Адаптивный дизайн */
@@ -631,7 +1308,7 @@
       <h1>LaTeX Онлайн-редактор</h1>
       <div id="collaboration-indicator" class="collaboration-indicator">
         <span class="collaboration-status inactive"></span>
-        <span id="collaboration-text">Офлайн режим</span>
+        <span id="collaboration-text">Подготовка совместного редактирования...</span>
       </div>
       <span id="autosave-indicator" class="autosave-indicator">Автосохранение...</span>
       <span id="autocompile-indicator" class="autocompile-indicator">Автокомпиляция...</span>
@@ -641,7 +1318,7 @@
       <button id="settings-btn">Настройки</button>
       <button id="files-btn">Файлы</button>
       <button id="manage-macros-btn">Макросы</button>
-      <button id="toggle-collab-btn">Совместная работа</button>
+      <button id="active-users-btn">Активные пользователи</button>
       <button id="help-btn">Справка</button>
     </div>
   </header>
@@ -675,12 +1352,27 @@
           </label>
         </div>
         <div class="settings-row">
+          <label for="realtime-toggle">Совместное редактирование:</label>
+          <label class="switch">
+            <input type="checkbox" id="realtime-toggle" checked>
+            <span class="slider"></span>
+          </label>
+        </div>
+        <div class="settings-row">
           <label for="autosave-interval">Интервал автосохранения (секунды):</label>
           <input type="number" id="autosave-interval" min="1" max="30" value="3" style="width: 50px;">
         </div>
         <div class="settings-row">
           <label for="autocompile-delay">Задержка автокомпиляции (секунды):</label>
           <input type="number" id="autocompile-delay" min="1" max="10" value="2" style="width: 50px;">
+        </div>
+        <div class="settings-row">
+          <label for="sync-delay">Задержка синхронизации (секунды):</label>
+          <input type="number" id="sync-delay" min="0.5" max="5" step="0.5" value="1" style="width: 50px;">
+        </div>
+        <div class="settings-row">
+          <label for="username-input">Ваше имя в совместной работе:</label>
+          <input type="text" id="username-input" placeholder="Ваше имя" value="Пользователь" style="width: 200px;">
         </div>
       </div>
       <div class="editor-container">
@@ -732,7 +1424,7 @@ F(x) = \int_{a}^{b} f(x) \, dx
         <div style="display: flex; align-items: center;">
           <span id="status">Готово</span>
           <div id="session-info" class="session-info" style="display: none; margin-left: 10px;">
-            Сессия: <span id="session-id"></span>
+            ID документа: <span id="session-id"></span>
             <button id="copy-session">Копировать</button>
           </div>
         </div>
@@ -812,341 +1504,7 @@ F(x) = \int_{a}^{b} f(x) \, dx
   
   <!-- Модальное окно для управления файлами -->
   <div id="files-modal" class="modal">
-    <div class="modal-content">
-      <span class="close">&times;</span>
-      <h2>Управление файлами</h2>
-      <div class="form-group">
-        <label for="new-file-name">Новый файл:</label>
-        <div style="display: flex;">
-          <input type="text" id="new-file-name" placeholder="Имя файла (например: document2)" style="flex: 1;">
-          <button id="create-file-btn" style="margin-left: 10px;">Создать</button>
-        </div>
-      </div>
-      
-      <h3 style="margin-top: 20px;">Ваши файлы</h3>
-      <div class="file-list" id="file-list">
-        <!-- Здесь будет список файлов -->
-      </div>
-    </div>
-  </div>
-  
-  <!-- Модальное окно для совместной работы -->
-  <div id="collab-modal" class="modal">
-    <div class="modal-content">
-      <span class="close">&times;</span>
-      <h2>Совместная работа</h2>
-      
-      <div class="form-group">
-        <h3>Создать сессию</h3>
-        <button id="create-session-btn" style="width: 100%;">Создать новую сессию</button>
-        <div id="session-link-container" style="display: none; margin-top: 10px;">
-          <p>Отправьте эту ссылку для совместной работы:</p>
-          <div class="invite-link" id="invite-link">
-            https://latex-editor.com/join?session=abc123
-            <button class="copy-btn" id="copy-invite">Копировать</button>
-          </div>
-        </div>
-      </div>
-      
-      <div class="form-group" style="margin-top: 20px;">
-        <h3>Присоединиться к сессии</h3>
-        <p>Вставьте ссылку или ID сессии:</p>
-        <div style="display: flex;">
-          <input type="text" id="join-session" placeholder="https://latex-editor.com/join?session=abc123 или abc123" style="flex: 1;">
-          <button id="join-session-btn" style="margin-left: 10px;">Присоединиться</button>
-        </div>
-      </div>
-      
-      <div class="form-group" style="margin-top: 20px;">
-        <label for="user-name">Ваше имя в сессии:</label>
-        <input type="text" id="user-name" placeholder="Введите ваше имя">
-      </div>
-      
-      <div class="form-group" style="margin-top: 20px;" id="active-users-container">
-        <h3>Активные пользователи</h3>
-        <div id="active-users" style="padding: 10px; background-color: #f5f5f5; border-radius: 4px;">
-          <!-- Здесь будет список активных пользователей -->
-          <p style="color: #666; font-style: italic;">Не подключено к сессии</p>
-        </div>
-      </div>
-    </div>
-  </div>
-  
-  <!-- Модальное окно справки -->
-  <div id="help-modal" class="modal">
-    <div class="modal-content" style="max-width: 700px; width: 70%;">
-      <span class="close">&times;</span>
-      <h2>Справка по LaTeX</h2>
-      
-      <div style="margin-bottom: 15px;">
-        <input type="text" id="command-search" placeholder="Поиск команд LaTeX..." style="width: 100%;">
-      </div>
-      
-      <div class="commands-list" id="commands-list">
-        <!-- Здесь будет список команд и их описаний -->
-      </div>
-    </div>
-  </div>
-
-  <script>
-    // Дождемся загрузки всех ресурсов
-    document.addEventListener('DOMContentLoaded', function() {
-      // Глобальные переменные
-      let editor;
-      let isCollaborationActive = false;
-      let firebaseApp = null;
-      let firebaseDB = null;
-      let currentSessionId = null;
-      let lastSavedContent = '';
-      let autoSaveTimer = null;
-      let autoCompileTimer = null;
-      let autoSaveDelay = 3000; // 3 секунды
-      let autoCompileDelay = 2000; // 2 секунды
-      let isTyping = false;
-      let lastTypingTime = 0;
-      let isInitialLoad = true;
-      let currentFileName = 'document1.tex';
-      
-      // Настройки
-      let settings = {
-        autoSaveEnabled: true,
-        autoCompileEnabled: false,
-        autoSaveInterval: 3, // в секундах
-        autoCompileDelay: 2  // в секундах
-      };
-      
-      // Загрузка настроек из localStorage
-      if (localStorage.getItem('latex-editor-settings')) {
-        try {
-          settings = JSON.parse(localStorage.getItem('latex-editor-settings'));
-          // Обновляем интерфейс настроек
-          document.getElementById('autosave-toggle').checked = settings.autoSaveEnabled;
-          document.getElementById('autocompile-toggle').checked = settings.autoCompileEnabled;
-          document.getElementById('autosave-interval').value = settings.autoSaveInterval;
-          document.getElementById('autocompile-delay').value = settings.autoCompileDelay;
-          
-          autoSaveDelay = settings.autoSaveInterval * 1000;
-          autoCompileDelay = settings.autoCompileDelay * 1000;
-        } catch (e) {
-          console.error('Ошибка при загрузке настроек:', e);
-        }
-      }
-      
-      // Генерация случайного ID
-      function generateId(length = 8) {
-        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-        let result = '';
-        for (let i = 0; i < length; i++) {
-          result += chars.charAt(Math.floor(Math.random() * chars.length));
-        }
-        return result;
-      }
-      
-      // LaTeX команды для подсказок
-      const latexCommands = [
-        { name: '\\section{}', description: 'Создает новый раздел документа' },
-        { name: '\\subsection{}', description: 'Создает подраздел документа' },
-        { name: '\\begin{equation}', description: 'Начало окружения для выделенного уравнения' },
-        { name: '\\end{equation}', description: 'Конец окружения для выделенного уравнения' },
-        { name: '\\begin{itemize}', description: 'Начало ненумерованного списка' },
-        { name: '\\end{itemize}', description: 'Конец ненумерованного списка' },
-        { name: '\\begin{enumerate}', description: 'Начало нумерованного списка' },
-        { name: '\\end{enumerate}', description: 'Конец нумерованного списка' },
-        { name: '\\item', description: 'Элемент списка' },
-        { name: '\\textbf{}', description: 'Жирный текст' },
-        { name: '\\textit{}', description: 'Курсивный текст' },
-        { name: '\\underline{}', description: 'Подчеркнутый текст' },
-        { name: '\\emph{}', description: 'Выделенный текст (обычно курсивом)' },
-        { name: '\\cite{}', description: 'Цитирование источника из библиографии' },
-        { name: '\\footnote{}', description: 'Добавление сноски' },
-        { name: '\\label{}', description: 'Метка для перекрестной ссылки' },
-        { name: '\\ref{}', description: 'Ссылка на метку' },
-        { name: '\\pageref{}', description: 'Ссылка на страницу с меткой' },
-        { name: '\\usepackage{}', description: 'Подключение пакета' },
-        { name: '\\includegraphics{}', description: 'Вставка изображения' },
-        { name: '\\frac{}{}', description: 'Дробь (числитель/знаменатель)' },
-        { name: '\\sqrt{}', description: 'Квадратный корень' },
-        { name: '\\sum', description: 'Знак суммы' },
-        { name: '\\int', description: 'Знак интеграла' },
-        { name: '\\prod', description: 'Знак произведения' },
-        { name: '\\lim', description: 'Предел' },
-        { name: '\\alpha', description: 'Греческая буква альфа (α)' },
-        { name: '\\beta', description: 'Греческая буква бета (β)' },
-        { name: '\\gamma', description: 'Греческая буква гамма (γ)' },
-        { name: '\\delta', description: 'Греческая буква дельта (δ)' },
-        { name: '\\epsilon', description: 'Греческая буква эпсилон (ε)' },
-        { name: '\\theta', description: 'Греческая буква тета (θ)' }
-      ];
-      
-      // Предустановленные макросы
-      const presetMacros = {
-        math: {
-          'frac': '\\frac{a}{b}',
-          'sqrt': '\\sqrt{x}',
-          'sum': '\\sum_{i=1}^{n} i',
-          'int': '\\int_{a}^{b} f(x) \\, dx',
-          'limit': '\\lim_{x \\to \\infty} f(x)',
-          'matrix': '\\begin{pmatrix}\na & b \\\\\nc & d\n\\end{pmatrix}'
-        },
-        structure: {
-          'chapter': '\\chapter{Название главы}',
-          'section': '\\section{Название раздела}',
-          'subsection': '\\subsection{Название подраздела}',
-          'subsubsection': '\\subsubsection{Название подподраздела}',
-          'paragraph': '\\paragraph{Название абзаца}',
-          'label': '\\label{tag:name}'
-        },
-        environments: {
-          'theorem': '\\begin{theorem}\n  Утверждение теоремы.\n\\end{theorem}',
-          'proof': '\\begin{proof}\n  Доказательство.\n\\end{proof}',
-          'figure': '\\begin{figure}[h]\n  \\centering\n  \\includegraphics[width=0.7\\textwidth]{filename}\n  \\caption{Подпись к рисунку}\n  \\label{fig:label}\n\\end{figure}',
-          'table': '\\begin{table}[h]\n  \\centering\n  \\begin{tabular}{|c|c|}\n    \\hline\n    A & B \\\\\n    \\hline\n    C & D \\\\\n    \\hline\n  \\end{tabular}\n  \\caption{Подпись к таблице}\n  \\label{tab:label}\n\\end{table}',
-          'align': '\\begin{align}\n  a &= b + c \\\\\n  &= d + e\n\\end{align}'
-        },
-        custom: {}
-      };
-      
-      // Инициализация редактора CodeMirror с поддержкой автодополнения
-      editor = CodeMirror.fromTextArea(document.getElementById('editor'), {
-        mode: "stex",
-        lineNumbers: true,
-        lineWrapping: true,
-        indentUnit: 2,
-        tabSize: 2,
-        autofocus: true,
-        matchBrackets: true,
-        autoCloseBrackets: true,
-        extraKeys: {
-          "Ctrl-Enter": function() { compileLatex(); },
-          "Ctrl-Space": function(cm) { 
-            showCommandHints(cm); 
-          },
-          "Tab": function(cm) {
-            // Проверка для активации макроса
-            const cursor = cm.getCursor();
-            const line = cm.getLine(cursor.line);
-            const textBeforeCursor = line.substring(0, cursor.ch);
-            
-            // Проверяем, есть ли макрос для введенного текста
-            const macros = JSON.parse(localStorage.getItem('latex-macros') || '{}');
-            let macroFound = false;
-            
-            for (const key in macros) {
-              if (textBeforeCursor.endsWith(key)) {
-                // Удаляем триггер и вставляем содержимое макроса
-                const from = {
-                  line: cursor.line,
-                  ch: cursor.ch - key.length
-                };
-                cm.replaceRange(macros[key], from, cursor);
-                macroFound = true;
-                break;
-              }
-            }
-            
-            if (!macroFound) {
-              // Если макрос не найден, вставляем обычный таб
-              cm.replaceSelection("  ");
-            }
-          }
-        }
-      });
-      
-      // Функция для показа подсказок команд LaTeX
-      function showCommandHints(cm) {
-        const cursor = cm.getCursor();
-        const line = cm.getLine(cursor.line);
-        const textBeforeCursor = line.substring(0, cursor.ch);
-        
-        // Находим последний символ "\" перед курсором
-        const lastBackslashPos = textBeforeCursor.lastIndexOf('\\');
-        
-        if (lastBackslashPos !== -1) {
-          const partialCommand = textBeforeCursor.substring(lastBackslashPos);
-          
-          // Фильтруем команды, соответствующие частичному вводу
-          const matchingCommands = latexCommands.filter(cmd => 
-            cmd.name.toLowerCase().startsWith(partialCommand.toLowerCase())
-          );
-          
-          if (matchingCommands.length > 0) {
-            // Позиция для отображения подсказки
-            const cursorCoords = cm.cursorCoords(true);
-            const hintTooltip = document.getElementById('hint-tooltip');
-            
-            hintTooltip.innerHTML = '';
-            matchingCommands.forEach((cmd, index) => {
-              const cmdElement = document.createElement('div');
-              cmdElement.classList.add('command-item');
-              cmdElement.innerHTML = `
-                <div class="command-name">${cmd.name}</div>
-                <div class="command-description">${cmd.description}</div>
-              `;
-              
-              // Вставка команды при клике
-              cmdElement.addEventListener('click', function() {
-                const from = {
-                  line: cursor.line,
-                  ch: lastBackslashPos
-                };
-                cm.replaceRange(cmd.name, from, cursor);
-                hideHintTooltip();
-              });
-              
-              hintTooltip.appendChild(cmdElement);
-            });
-            
-            // Отображаем подсказку
-            hintTooltip.style.display = 'block';
-            hintTooltip.style.left = `${cursorCoords.left}px`;
-            hintTooltip.style.top = `${cursorCoords.top + 20}px`;
-            
-            // Закрываем подсказку при любом клике или нажатии клавиши
-            document.addEventListener('click', hideHintTooltip);
-            cm.on('keydown', hideHintTooltip);
-          }
-        }
-      }
-      
-      // Скрытие подсказки
-      function hideHintTooltip() {
-        const hintTooltip = document.getElementById('hint-tooltip');
-        hintTooltip.style.display = 'none';
-        document.removeEventListener('click', hideHintTooltip);
-        editor.off('keydown', hideHintTooltip);
-      }
-      
-      // Устанавливаем слушатели для редактора
-      editor.on('keyup', function(cm, event) {
-        // Показываем подсказки при вводе символа "\"
-        if (event.key === '\\') {
-          setTimeout(() => showCommandHints(cm), 100);
-        }
-      });
-      
-      // ===== УПРАВЛЕНИЕ ФАЙЛАМИ =====
-      
-      // Загрузка списка файлов
-      function loadFilesList() {
-        const fileList = document.getElementById('file-list');
-        fileList.innerHTML = '';
-        
-        // Получаем список файлов из localStorage
-        const fileKeys = Object.keys(localStorage).filter(key => key.startsWith('latex-document-'));
-        
-        // Если нет файлов, создаем первый файл
-        if (fileKeys.length === 0) {
-          localStorage.setItem('latex-document-document1', editor.getValue());
-          fileKeys.push('latex-document-document1');
-        }
-        
-        // Отображаем файлы в списке
-        fileKeys.forEach(key => {
-          const fileName = key.replace('latex-document-', '');
-          const fileItem = document.createElement('div');
-          fileItem.className = 'file-item';
-          if (fileName === currentFileName) {
-            fileItem.classList.add('active');
+    <div classfileItem.classList.add('active');
           }
           
           const fileTitle = document.createElement('span');
@@ -1170,6 +1528,11 @@ F(x) = \int_{a}^{b} f(x) \, dx
               if (fileName === currentFileName) {
                 currentFileName = newName;
                 document.getElementById('current-file').textContent = `Файл: ${newName}`;
+                
+                // Обновляем совместное редактирование с новым ID
+                if (isCollaborationActive && settings.realtimeEnabled) {
+                  setupRealtimeEditing(newName);
+                }
               }
               
               // Обновляем список
@@ -1199,6 +1562,11 @@ F(x) = \int_{a}^{b} f(x) \, dx
                   document.getElementById('current-file').textContent = `Файл: ${currentFileName}`;
                   editor.setValue('\\documentclass{article}\n\\begin{document}\n\nНовый документ\n\n\\end{document}');
                   localStorage.setItem(`latex-document-${currentFileName}`, editor.getValue());
+                  
+                  // Настраиваем совместное редактирование для нового файла
+                  if (isCollaborationActive && settings.realtimeEnabled) {
+                    setupRealtimeEditing(currentFileName);
+                  }
                 }
               }
               
@@ -1240,6 +1608,11 @@ F(x) = \int_{a}^{b} f(x) \, dx
           
           // Обновляем lastSavedContent для правильной работы автосохранения
           lastSavedContent = fileContent;
+          
+          // Настраиваем совместное редактирование для загруженного файла
+          if (settings.realtimeEnabled) {
+            setupRealtimeEditing(fileName);
+          }
           
           // Компилируем загруженный файл
           compileLatex();
@@ -1305,48 +1678,7 @@ F(x) = \int_{a}^{b} f(x) \, dx
       // Функция автосохранения
       function setupAutoSave() {
         // Отслеживаем изменения в редакторе
-        editor.on("change", function() {
-          // Отметим, что пользователь печатает
-          isTyping = true;
-          lastTypingTime = Date.now();
-          
-          // Сбрасываем предыдущий таймер автосохранения
-          if (autoSaveTimer) {
-            clearTimeout(autoSaveTimer);
-          }
-          
-          // Устанавливаем новый таймер для автосохранения
-          if (settings.autoSaveEnabled) {
-            autoSaveTimer = setTimeout(function() {
-              // Проверяем, прошло ли достаточно времени с последнего ввода
-              if (Date.now() - lastTypingTime >= autoSaveDelay) {
-                isTyping = false;
-                autoSave();
-              }
-            }, autoSaveDelay);
-          }
-          
-          // Сбрасываем предыдущий таймер автокомпиляции
-          if (autoCompileTimer) {
-            clearTimeout(autoCompileTimer);
-          }
-          
-          // Устанавливаем новый таймер для автокомпиляции
-          if (settings.autoCompileEnabled) {
-            autoCompileTimer = setTimeout(function() {
-              // Показываем индикатор автокомпиляции
-              const autocompileIndicator = document.getElementById('autocompile-indicator');
-              autocompileIndicator.classList.add('show');
-              
-              compileLatex();
-              
-              // Скрываем индикатор через некоторое время
-              setTimeout(function() {
-                autocompileIndicator.classList.remove('show');
-              }, 2000);
-            }, autoCompileDelay);
-          }
-        });
+        editor.on("change", handleEditorChanges);
         
         // Также сохраняем при потере фокуса
         editor.on("blur", function() {
@@ -1369,163 +1701,130 @@ F(x) = \int_{a}^{b} f(x) \, dx
           
           // Сохраняем локально
           localStorage.setItem(`latex-document-${currentFileName}`, content);
-          lastSavedContent = content;
-          
-          // Если активна совместная работа, синхронизируем с Firebase
-          if (isCollaborationActive && firebaseDB && currentSessionId) {
-            // Здесь будет код для сохранения в Firebase
-            firebaseDB.ref('sessions/' + currentSessionId + '/content').set(content);
-          }
           
           // Обновляем статус
           document.getElementById('status').textContent = "Автосохранение...";
           
-          // Скрываем индикатор автосохранения через некоторое время
-          setTimeout(function() {
+          // Если активна совместная работа, синхронизируем с Firebase
+          if (isCollaborationActive && settings.realtimeEnabled) {
+            syncContent();
+          } else {
+            lastSavedContent = content;
+          }
+          
+          // Скрываем индикатор через некоторое время
+          setTimeout(() => {
             autosaveIndicator.classList.remove('show');
             document.getElementById('status').textContent = "Готово";
           }, 2000);
         }
       }
       
-      // ===== СОВМЕСТНАЯ РАБОТА =====
+      // ===== НАСТРОЙКИ =====
       
-      // Инициализация Firebase (заглушка - для реальной работы нужны реальные настройки)
-      function initFirebase() {
-        // В реальном приложении тут будет настоящая инициализация Firebase
-        console.log("Firebase имитация инициализирована");
-        
-        // Изменяем индикатор
-        document.querySelector('.collaboration-status').classList.remove('inactive');
-        document.querySelector('.collaboration-status').classList.add('active');
-        document.getElementById('collaboration-text').textContent = "Сессия активна";
-        
-        return true;
-      }
-      
-      // Создание новой сессии
-      function createSession() {
-        if (!initFirebase()) return;
-        
-        // Генерируем уникальный ID для сессии
-        const sessionId = generateId(12);
-        
-        // Устанавливаем текущую сессию
-        currentSessionId = sessionId;
-        
-        // Обновляем интерфейс
-        document.getElementById('session-id').textContent = sessionId;
-        document.getElementById('session-info').style.display = 'flex';
-        
-        // Формируем ссылку для приглашения
-        const inviteLink = `https://latex-editor.com/join?session=${sessionId}`;
-        document.getElementById('invite-link').innerHTML = inviteLink + 
-          '<button class="copy-btn" id="copy-invite">Копировать</button>';
-        document.getElementById('session-link-container').style.display = 'block';
-        
-        // Обработчик для кнопки копирования
-        document.getElementById('copy-invite').addEventListener('click', function() {
-          navigator.clipboard.writeText(inviteLink).then(function() {
-            alert("Ссылка скопирована в буфер обмена");
-          }, function(err) {
-            console.error('Не удалось скопировать ссылку: ', err);
-          });
+      // Настройка интерфейса настроек
+      function setupSettings() {
+        // Отображение/скрытие панели настроек
+        document.getElementById('settings-btn').addEventListener('click', function() {
+          const settingsPanel = document.querySelector('.settings-panel');
+          settingsPanel.style.display = settingsPanel.style.display === 'none' ? 'block' : 'none';
         });
         
-        // Активируем режим совместной работы
-        isCollaborationActive = true;
-        
-        // Симуляция добавления пользователей
-        document.getElementById('active-users').innerHTML = `
-          <div style="display: flex; align-items: center; margin-bottom: 5px;">
-            <span style="width: 20px; height: 20px; border-radius: 50%; background-color: #3498db; color: white; text-align: center; line-height: 20px; margin-right: 8px;">В</span>
-            <span>Вы (создатель сессии)</span>
-          </div>
-        `;
-        
-        return sessionId;
-      }
-      
-      // Присоединение к существующей сессии
-      function joinSession(sessionId) {
-        if (!initFirebase()) return;
-        
-        // Извлекаем ID сессии из ссылки, если она была вставлена
-        if (sessionId.includes('?session=')) {
-          sessionId = sessionId.split('?session=')[1];
-        }
-        
-        // Устанавливаем текущую сессию
-        currentSessionId = sessionId;
-        
-        // Обновляем интерфейс
-        document.getElementById('session-id').textContent = sessionId;
-        document.getElementById('session-info').style.display = 'flex';
-        
-        // Активируем режим совместной работы
-        isCollaborationActive = true;
-        
-        // Симуляция добавления пользователей
-        const userName = document.getElementById('user-name').value || 'Гость';
-        document.getElementById('active-users').innerHTML = `
-          <div style="display: flex; align-items: center; margin-bottom: 5px;">
-            <span style="width: 20px; height: 20px; border-radius: 50%; background-color: #2ecc71; color: white; text-align: center; line-height: 20px; margin-right: 8px;">А</span>
-            <span>Администратор (создатель сессии)</span>
-          </div>
-          <div style="display: flex; align-items: center;">
-            <span style="width: 20px; height: 20px; border-radius: 50%; background-color: #3498db; color: white; text-align: center; line-height: 20px; margin-right: 8px;">${userName.charAt(0)}</span>
-            <span>Вы (${userName})</span>
-          </div>
-        `;
-        
-        // Закрываем модальное окно
-        document.getElementById('collab-modal').style.display = 'none';
-        
-        // В демо - просто показываем сообщение
-        alert(`Присоединились к сессии: ${sessionId}`);
-        
-        return true;
-      }
-      
-      // Настройка слушателей для совместной работы
-      function setupCollaboration() {
-        // Кнопка для открытия модального окна совместной работы
-        document.getElementById('toggle-collab-btn').addEventListener('click', function() {
-          document.getElementById('collab-modal').style.display = 'block';
+        // Переключатель автосохранения
+        document.getElementById('autosave-toggle').addEventListener('change', function() {
+          settings.autoSaveEnabled = this.checked;
+          saveSettings();
         });
         
-        // Закрытие модального окна
-        document.querySelectorAll('#collab-modal .close').forEach(function(closeBtn) {
-          closeBtn.addEventListener('click', function() {
-            document.getElementById('collab-modal').style.display = 'none';
-          });
+        // Переключатель автокомпиляции
+        document.getElementById('autocompile-toggle').addEventListener('change', function() {
+          settings.autoCompileEnabled = this.checked;
+          saveSettings();
         });
         
-        // Создание новой сессии
-        document.getElementById('create-session-btn').addEventListener('click', function() {
-          createSession();
-        });
-        
-        // Присоединение к существующей сессии
-        document.getElementById('join-session-btn').addEventListener('click', function() {
-          const sessionId = document.getElementById('join-session').value.trim();
-          if (sessionId) {
-            joinSession(sessionId);
+        // Переключатель совместного редактирования
+        document.getElementById('realtime-toggle').addEventListener('change', function() {
+          settings.realtimeEnabled = this.checked;
+          isCollaborationActive = this.checked;
+          
+          // Обновляем состояние совместного редактирования
+          if (this.checked) {
+            setupRealtimeEditing(currentFileName);
           } else {
-            alert("Введите ID сессии!");
+            // Отключаем совместное редактирование
+            document.querySelector('.collaboration-status').classList.remove('active');
+            document.querySelector('.collaboration-status').classList.add('inactive');
+            document.getElementById('collaboration-text').textContent = "Совместное редактирование отключено";
+            document.getElementById('session-info').style.display = 'none';
+          }
+          
+          saveSettings();
+        });
+        
+        // Интервал автосохранения
+        document.getElementById('autosave-interval').addEventListener('change', function() {
+          const value = parseInt(this.value);
+          if (value >= 1 && value <= 30) {
+            settings.autoSaveInterval = value;
+            autoSaveDelay = value * 1000;
+            saveSettings();
           }
         });
         
-        // Копирование ID сессии
-        document.getElementById('copy-session').addEventListener('click', function() {
-          const sessionId = document.getElementById('session-id').textContent;
-          navigator.clipboard.writeText(sessionId).then(function() {
-            alert("ID сессии скопирован в буфер обмена");
-          }, function(err) {
-            console.error('Не удалось скопировать ID: ', err);
-            alert("Не удалось скопировать ID. Попробуйте выделить и скопировать вручную.");
-          });
+        // Задержка автокомпиляции
+        document.getElementById('autocompile-delay').addEventListener('change', function() {
+          const value = parseInt(this.value);
+          if (value >= 1 && value <= 10) {
+            settings.autoCompileDelay = value;
+            autoCompileDelay = value * 1000;
+            saveSettings();
+          }
         });
+        
+        // Задержка синхронизации
+        document.getElementById('sync-delay').addEventListener('change', function() {
+          const value = parseFloat(this.value);
+          if (value >= 0.5 && value <= 5) {
+            settings.syncDelay = value;
+            syncDelay = value * 1000;
+            saveSettings();
+          }
+        });
+        
+        // Имя пользователя
+        document.getElementById('username-input').addEventListener('change', function() {
+          const newUsername = this.value.trim();
+          if (newUsername) {
+            currentUsername = newUsername;
+            localStorage.setItem('latex-editor-username', newUsername);
+            
+            // Обновляем имя в активной сессии, если она существует
+            if (isCollaborationActive && firebaseDB && currentSessionId) {
+              updateUsername(newUsername);
+            }
+          }
+        });
+      }
+      
+      // Сохранение настроек
+      function saveSettings() {
+        localStorage.setItem('latex-editor-settings', JSON.stringify(settings));
+      }
+      
+      // Обновление имени пользователя в активной сессии
+      function updateUsername(newUsername) {
+        if (!isCollaborationActive || !firebaseDB || !currentSessionId) return;
+        
+        // В реальном приложении здесь был бы код для обновления имени в Firebase
+        console.log(`Обновление имени пользователя на: ${newUsername}`);
+        
+        // Обновляем локальный список активных пользователей для демонстрации
+        const userIds = Object.keys(activeUsers);
+        if (userIds.length > 0) {
+          // Обновляем имя пользователя для первого пользователя (для демонстрации)
+          activeUsers[userIds[0]].name = newUsername;
+          updateActiveUsersList();
+        }
       }
       
       // ===== ОСНОВНЫЕ ФУНКЦИИ РЕДАКТОРА =====
@@ -1577,6 +1876,12 @@ F(x) = \int_{a}^{b} f(x) \, dx
             if (loadingOverlay) {
               loadingOverlay.style.display = 'none';
             }
+            
+            setTimeout(() => {
+              if (statusElement) {
+                statusElement.textContent = "Готово";
+              }
+            }, 2000);
           }
         }, 800);
       }
@@ -1956,7 +2261,6 @@ F(x) = \int_{a}^{b} f(x) \, dx
         const addMacroBtn = document.getElementById('add-macro-btn');
         const macroNameInput = document.getElementById('macro-name');
         const macroContentInput = document.getElementById('macro-content');
-        const macroList = document.getElementById('macro-list');
         const macroPreview = document.getElementById('macro-preview');
         const macroFilter = document.getElementById('macro-filter');
         
@@ -1986,6 +2290,7 @@ F(x) = \int_{a}^{b} f(x) \, dx
           
           if (name && content) {
             // Получаем текущие макросы
+            const macros = JSON.parse(// Получаем текущие макросы
             const macros = JSON.parse(localStorage.getItem('latex-macros') || '{}');
             macros[name] = content;
             localStorage.setItem('latex-macros', JSON.stringify(macros));
@@ -2060,131 +2365,41 @@ F(x) = \int_{a}^{b} f(x) \, dx
         });
       }
       
-      // ===== НАСТРОЙКИ =====
+      // ===== АКТИВНЫЕ ПОЛЬЗОВАТЕЛИ =====
       
-      // Настройка интерфейса настроек
-      function setupSettings() {
-        // Отображение/скрытие панели настроек
-        document.getElementById('settings-btn').addEventListener('click', function() {
-          const settingsPanel = document.querySelector('.settings-panel');
-          settingsPanel.style.display = settingsPanel.style.display === 'none' ? 'block' : 'none';
-        });
-        
-        // Переключатель автосохранения
-        document.getElementById('autosave-toggle').addEventListener('change', function() {
-          settings.autoSaveEnabled = this.checked;
-          saveSettings();
-        });
-        
-        // Переключатель автокомпиляции
-        document.getElementById('autocompile-toggle').addEventListener('change', function() {
-          settings.autoCompileEnabled = this.checked;
-          saveSettings();
-        });
-        
-        // Интервал автосохранения
-        document.getElementById('autosave-interval').addEventListener('change', function() {
-          const value = parseInt(this.value);
-          if (value >= 1 && value <= 30) {
-            settings.autoSaveInterval = value;
-            autoSaveDelay = value * 1000;
-            saveSettings();
-          }
-        });
-        
-        // Задержка автокомпиляции
-        document.getElementById('autocompile-delay').addEventListener('change', function() {
-          const value = parseInt(this.value);
-          if (value >= 1 && value <= 10) {
-            settings.autoCompileDelay = value;
-            autoCompileDelay = value * 1000;
-            saveSettings();
-          }
-        });
-      }
-      
-      // Сохранение настроек
-      function saveSettings() {
-        localStorage.setItem('latex-editor-settings', JSON.stringify(settings));
-      }
-      
-      // ===== УПРАВЛЕНИЕ ФАЙЛАМИ =====
-      
-      // Открытие модального окна файлов
-      document.getElementById('files-btn').addEventListener('click', function() {
-        document.getElementById('files-modal').style.display = 'block';
-        loadFilesList();
+      // Открытие модального окна активных пользователей
+      document.getElementById('active-users-btn').addEventListener('click', function() {
+        document.getElementById('users-modal').style.display = 'block';
+        updateActiveUsersList();
       });
       
-      // Закрытие модального окна файлов
-      document.querySelectorAll('#files-modal .close').forEach(function(closeBtn) {
-        closeBtn.addEventListener('click', function() {
-          document.getElementById('files-modal').style.display = 'none';
-        });
+      // Закрытие модального окна активных пользователей
+      document.querySelector('#users-modal .close').addEventListener('click', function() {
+        document.getElementById('users-modal').style.display = 'none';
       });
       
-      // Закрытие модального окна при клике вне его
-      window.addEventListener('click', function(event) {
-        const modals = document.querySelectorAll('.modal');
-        modals.forEach(modal => {
-          if (event.target === modal) {
-            modal.style.display = 'none';
-          }
-        });
-      });
-      
-      // ===== СПРАВКА =====
-      
-      // Открытие модального окна справки
-      document.getElementById('help-btn').addEventListener('click', function() {
-        document.getElementById('help-modal').style.display = 'block';
-        renderCommandsList();
-      });
-      
-      // Закрытие модального окна справки
-      document.querySelector('#help-modal .close').addEventListener('click', function() {
-        document.getElementById('help-modal').style.display = 'none';
-      });
-      
-      // Отображение списка команд LaTeX
-      function renderCommandsList() {
-        const commandsList = document.getElementById('commands-list');
-        const searchInput = document.getElementById('command-search');
-        const searchTerm = searchInput.value.toLowerCase();
-        
-        commandsList.innerHTML = '';
-        
-        const filteredCommands = latexCommands.filter(cmd => 
-          cmd.name.toLowerCase().includes(searchTerm) || 
-          cmd.description.toLowerCase().includes(searchTerm)
-        );
-        
-        filteredCommands.forEach(cmd => {
-          const cmdItem = document.createElement('div');
-          cmdItem.className = 'command-item';
-          cmdItem.innerHTML = `
-            <div class="command-name">${cmd.name}</div>
-            <div class="command-description">${cmd.description}</div>
-          `;
+      // Обновление имени пользователя
+      document.getElementById('update-username-btn').addEventListener('click', function() {
+        const newUsername = document.getElementById('change-username').value.trim();
+        if (newUsername) {
+          currentUsername = newUsername;
+          localStorage.setItem('latex-editor-username', newUsername);
           
-          // Вставка команды в редактор
-          cmdItem.addEventListener('click', function() {
-            editor.replaceSelection(cmd.name);
-            editor.focus();
-            document.getElementById('help-modal').style.display = 'none';
-          });
+          // Обновляем поле в настройках
+          document.getElementById('username-input').value = newUsername;
           
-          commandsList.appendChild(cmdItem);
-        });
-        
-        if (filteredCommands.length === 0) {
-          commandsList.innerHTML = '<div style="padding: 10px; color: #666;">Нет команд, соответствующих поисковому запросу</div>';
+          // Обновляем имя в активной сессии
+          if (isCollaborationActive && settings.realtimeEnabled) {
+            updateUsername(newUsername);
+          }
+          
+          // Очищаем поле ввода
+          document.getElementById('change-username').value = '';
+          
+          alert(`Имя пользователя изменено на: ${newUsername}`);
+        } else {
+          alert('Введите имя пользователя!');
         }
-      }
-      
-      // Поиск команд
-      document.getElementById('command-search').addEventListener('input', function() {
-        renderCommandsList();
       });
       
       // ===== ИНИЦИАЛИЗАЦИЯ И ЗАГРУЗКА ДОКУМЕНТА =====
@@ -2216,14 +2431,35 @@ F(x) = \int_{a}^{b} f(x) \, dx
         // Настройка автосохранения
         setupAutoSave();
         
-        // Настройка совместной работы
-        setupCollaboration();
-        
         // Настройка управления макросами
         setupMacrosManagement();
         
         // Настройка управления настройками
         setupSettings();
+        
+        // Настраиваем совместное редактирование, если оно включено
+        if (settings.realtimeEnabled) {
+          setupRealtimeEditing(currentFileName);
+          
+          // Добавляем симуляцию активных пользователей (для демонстрации)
+          setTimeout(() => {
+            if (Object.keys(activeUsers).length === 0) {
+              activeUsers[generateId(8)] = {
+                name: 'Гость 1',
+                joinedAt: new Date().toISOString(),
+                lastActive: new Date().toISOString()
+              };
+              
+              activeUsers[generateId(8)] = {
+                name: currentUsername,
+                joinedAt: new Date().toISOString(),
+                lastActive: new Date().toISOString()
+              };
+              
+              updateActiveUsersList();
+            }
+          }, 2000);
+        }
         
         // Компилируем при первой загрузке
         setTimeout(compileLatex, 500);
