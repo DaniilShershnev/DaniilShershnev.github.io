@@ -13,7 +13,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/hint/show-hint.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/hint/anyword-hint.min.js"></script>
   
-  <!-- MathJax для формул в подсказках -->
+  <!-- MathJax для формул в подсказках и предпросмотре -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.0/es5/tex-mml-chtml.min.js"></script>
   
   <style>
@@ -104,18 +104,22 @@
     .preview-container {
       flex: 1;
       overflow: auto;
-      background-color: white;
-      box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.1);
+      background-color: #f5f5f5;
       padding: 16px;
       display: flex;
       justify-content: center;
       align-items: flex-start;
     }
     
-    #pdf-viewer {
-      width: 100%;
-      height: 100%;
-      border: none;
+    #pdf-preview {
+      background-color: white;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+      padding: 40px;
+      width: 210mm;
+      min-height: 297mm;
+      box-sizing: border-box;
+      margin: 20px;
+      transform-origin: top center;
     }
     
     .loading-overlay {
@@ -240,6 +244,51 @@
       min-height: 60px;
     }
     
+    /* PDF стили */
+    .pdf-title {
+      font-size: 24px;
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    
+    .pdf-author {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+    
+    .pdf-date {
+      text-align: center;
+      margin-bottom: 50px;
+    }
+    
+    .pdf-section {
+      font-size: 18px;
+      font-weight: bold;
+      margin-top: 20px;
+      margin-bottom: 10px;
+    }
+    
+    .pdf-subsection {
+      font-size: 16px;
+      font-weight: bold;
+      margin-top: 15px;
+      margin-bottom: 10px;
+    }
+    
+    .pdf-paragraph {
+      margin-bottom: 10px;
+      text-align: justify;
+    }
+    
+    .pdf-equation {
+      margin: 15px 0;
+      text-align: center;
+    }
+    
+    .pdf-list {
+      margin-left: 20px;
+    }
+    
     /* Адаптивный дизайн */
     @media (max-width: 768px) {
       main {
@@ -337,7 +386,9 @@ F(x) = \int_{a}^{b} f(x) \, dx
         <button id="download-pdf">Скачать PDF</button>
       </div>
       <div class="preview-container">
-        <iframe id="pdf-viewer"></iframe>
+        <div id="pdf-preview">
+          <!-- Здесь будет предпросмотр PDF -->
+        </div>
       </div>
     </div>
   </main>
@@ -429,24 +480,14 @@ F(x) = \int_{a}^{b} f(x) \, dx
         document.querySelector('.loading-overlay').style.display = 'flex';
         document.getElementById('status').textContent = "Компиляция...";
         
-        // В реальном приложении здесь бы происходила компиляция через TeXLive.js
-        // Здесь мы имитируем процесс компиляции с задержкой
+        // Имитация процесса компиляции с задержкой (для демонстрации)
         setTimeout(() => {
           try {
-            // Имитируем успешную компиляцию, обновляя предпросмотр
-            document.getElementById('pdf-viewer').srcdoc = `
-              <html>
-                <body style="margin: 0; padding: 0; display: flex; justify-content: center; background-color: #f0f0f0;">
-                  <div style="padding: 20px; background-color: white; box-shadow: 0 0 10px rgba(0,0,0,0.1); margin: 20px; width: 210mm; min-height: 297mm;">
-                    <h1>Название документа</h1>
-                    <p>Документ скомпилирован успешно.</p>
-                    <p>В реальном приложении здесь будет отображаться PDF, созданный из вашего LaTeX кода.</p>
-                    <p>Формула: \(E = mc^2\)</p>
-                  </div>
-                </body>
-                <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.0/es5/tex-mml-chtml.min.js"><\/script>
-              </html>
-            `;
+            // Парсинг LaTeX кода
+            const parsedDocument = parseLatexDocument(latexCode);
+            
+            // Обновляем предпросмотр
+            renderPdfPreview(parsedDocument);
             
             document.getElementById('status').textContent = "Компиляция завершена";
             
@@ -455,7 +496,115 @@ F(x) = \int_{a}^{b} f(x) \, dx
           } finally {
             document.querySelector('.loading-overlay').style.display = 'none';
           }
-        }, 1500);
+        }, 800);
+      }
+      
+      // Функция для парсинга LaTeX документа
+      function parseLatexDocument(latexCode) {
+        const document = {};
+        
+        // Извлечение заголовка
+        const titleMatch = latexCode.match(/\\title\{([^}]*)\}/);
+        document.title = titleMatch ? titleMatch[1] : "Без названия";
+        
+        // Извлечение автора
+        const authorMatch = latexCode.match(/\\author\{([^}]*)\}/);
+        document.author = authorMatch ? authorMatch[1] : "";
+        
+        // Извлечение даты
+        const dateMatch = latexCode.match(/\\date\{([^}]*)\}/);
+        document.date = dateMatch ? dateMatch[1] : "\\today";
+        if (document.date === "\\today") {
+          const today = new Date();
+          document.date = today.toLocaleDateString('ru-RU');
+        }
+        
+        // Извлечение содержимого документа
+        const bodyMatch = latexCode.match(/\\begin\{document\}([\s\S]*)\\end\{document\}/);
+        document.body = bodyMatch ? bodyMatch[1] : "";
+        
+        // Извлечение секций
+        document.sections = [];
+        const sectionRegex = /\\section\{([^}]*)\}([\s\S]*?)(?=\\section\{|\\end\{document\})/g;
+        let sectionMatch;
+        while ((sectionMatch = sectionRegex.exec(latexCode)) !== null) {
+          document.sections.push({
+            title: sectionMatch[1],
+            content: sectionMatch[2]
+          });
+        }
+        
+        return document;
+      }
+      
+      // Функция для рендеринга предпросмотра PDF
+      function renderPdfPreview(document) {
+        const preview = document.getElementById('pdf-preview');
+        
+        // Создаем HTML-структуру для предпросмотра
+        let html = `
+          <div class="pdf-title">${document.title}</div>
+          <div class="pdf-author">${document.author}</div>
+          <div class="pdf-date">${document.date}</div>
+        `;
+        
+        // Обрабатываем содержимое секций
+        document.sections.forEach(section => {
+          html += `<div class="pdf-section">${section.title}</div>`;
+          
+          // Заменяем LaTeX-команды на HTML
+          let content = section.content;
+          
+          // Обработка списков itemize
+          content = content.replace(/\\begin\{itemize\}([\s\S]*?)\\end\{itemize\}/g, function(match, listContent) {
+            let listHTML = '<ul class="pdf-list">';
+            const itemRegex = /\\item\s+(.*?)(?=\\item|$)/gs;
+            let itemMatch;
+            while ((itemMatch = itemRegex.exec(listContent)) !== null) {
+              listHTML += `<li>${itemMatch[1].trim()}</li>`;
+            }
+            listHTML += '</ul>';
+            return listHTML;
+          });
+          
+          // Обработка списков enumerate
+          content = content.replace(/\\begin\{enumerate\}([\s\S]*?)\\end\{enumerate\}/g, function(match, listContent) {
+            let listHTML = '<ol class="pdf-list">';
+            const itemRegex = /\\item\s+(.*?)(?=\\item|$)/gs;
+            let itemMatch;
+            while ((itemMatch = itemRegex.exec(listContent)) !== null) {
+              listHTML += `<li>${itemMatch[1].trim()}</li>`;
+            }
+            listHTML += '</ol>';
+            return listHTML;
+          });
+          
+          // Обработка уравнений
+          content = content.replace(/\\begin\{equation\}([\s\S]*?)\\end\{equation\}/g, 
+            '<div class="pdf-equation">$$1</div>');
+          
+          // Обработка встроенных формул
+          content = content.replace(/\$(.*?)\$/g, '\\($1\\)');
+          
+          // Разбиваем текст на абзацы
+          const paragraphs = content.split('\n\n');
+          paragraphs.forEach(paragraph => {
+            if (paragraph.trim() && !paragraph.includes('<ul') && !paragraph.includes('<ol') && !paragraph.includes('pdf-equation')) {
+              html += `<div class="pdf-paragraph">${paragraph.trim()}</div>`;
+            } else {
+              html += paragraph;
+            }
+          });
+        });
+        
+        preview.innerHTML = html;
+        
+        // Запускаем MathJax для рендеринга формул
+        if (typeof MathJax !== 'undefined') {
+          MathJax.typesetPromise([preview]).catch(function (err) {
+            console.error('MathJax ошибка:', err);
+          });
+        }
       }
       
       // Вставка шаблонов из кнопок панели инструментов
@@ -501,11 +650,8 @@ F(x) = \int_{a}^{b} f(x) \, dx
       });
       
       function updateZoom() {
-        const contentDocument = document.getElementById('pdf-viewer').contentDocument;
-        if (contentDocument && contentDocument.body && contentDocument.body.firstElementChild) {
-          contentDocument.body.firstElementChild.style.transform = `scale(${scale})`;
-          contentDocument.body.firstElementChild.style.transformOrigin = 'top center';
-        }
+        const preview = document.getElementById('pdf-preview');
+        preview.style.transform = `scale(${scale})`;
       }
       
       // Управление макросами
@@ -565,7 +711,9 @@ F(x) = \int_{a}^{b} f(x) \, dx
           
           // Запускаем MathJax для рендеринга формулы
           if (typeof MathJax !== 'undefined') {
-            MathJax.typeset([macroPreview]);
+            MathJax.typesetPromise([macroPreview]).catch(function (err) {
+              console.error('MathJax ошибка:', err);
+            });
           }
         } else {
           macroPreview.textContent = content;
@@ -596,7 +744,9 @@ F(x) = \int_{a}^{b} f(x) \, dx
             
             // Запускаем MathJax для рендеринга формулы
             if (typeof MathJax !== 'undefined') {
-              MathJax.typeset([macroPreview]);
+              MathJax.typesetPromise([macroPreview]).catch(function (err) {
+                console.error('MathJax ошибка:', err);
+              });
             }
           });
           
@@ -645,7 +795,7 @@ F(x) = \int_{a}^{b} f(x) \, dx
       }
       
       // Компилируем при первой загрузке
-      setTimeout(compileLatex, 1000);
+      setTimeout(compileLatex, 500);
     });
   </script>
 </body>
