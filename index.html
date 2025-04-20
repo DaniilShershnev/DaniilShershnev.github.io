@@ -13,6 +13,10 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/hint/show-hint.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/hint/anyword-hint.min.js"></script>
   
+  <!-- Firebase для совместной работы -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.6.5/firebase-app-compat.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.6.5/firebase-database-compat.min.js"></script>
+  
   <!-- MathJax для формул в подсказках и предпросмотре -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.0/es5/tex-mml-chtml.min.js"></script>
   
@@ -57,6 +61,11 @@
     }
     
     button:hover {
+      background-color: #3498db;
+      color: white;
+    }
+    
+    button.active {
       background-color: #3498db;
       color: white;
     }
@@ -289,6 +298,69 @@
       margin-left: 20px;
     }
     
+    /* Стили для совместной работы */
+    .collaboration-indicator {
+      display: flex;
+      align-items: center;
+      margin-left: 10px;
+    }
+    
+    .collaboration-status {
+      display: inline-block;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      margin-right: 5px;
+    }
+    
+    .collaboration-status.active {
+      background-color: #2ecc71;
+    }
+    
+    .collaboration-status.inactive {
+      background-color: #e74c3c;
+    }
+    
+    .user-indicator {
+      display: inline-block;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background-color: #3498db;
+      color: white;
+      text-align: center;
+      line-height: 24px;
+      font-size: 12px;
+      margin-left: 5px;
+    }
+    
+    .session-info {
+      display: flex;
+      align-items: center;
+    }
+    
+    #session-id {
+      font-family: monospace;
+      margin-left: 5px;
+    }
+    
+    #copy-session {
+      margin-left: 5px;
+      padding: 2px 5px;
+      font-size: 12px;
+    }
+    
+    .autosave-indicator {
+      font-size: 12px;
+      margin-left: 10px;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+    
+    .autosave-indicator.show {
+      opacity: 1;
+    }
+    
     /* Адаптивный дизайн */
     @media (max-width: 768px) {
       main {
@@ -309,10 +381,18 @@
 </head>
 <body>
   <header>
-    <h1>LaTeX Онлайн-редактор</h1>
+    <div style="display: flex; align-items: center;">
+      <h1>LaTeX Онлайн-редактор</h1>
+      <div id="collaboration-indicator" class="collaboration-indicator">
+        <span class="collaboration-status inactive"></span>
+        <span id="collaboration-text">Офлайн режим</span>
+      </div>
+      <span id="autosave-indicator" class="autosave-indicator">Автосохранение...</span>
+    </div>
     <div class="header-buttons">
       <button id="compile-btn">Компилировать</button>
       <button id="manage-macros-btn">Макросы</button>
+      <button id="toggle-collab-btn">Совместная работа</button>
       <button id="save-btn">Сохранить</button>
     </div>
   </header>
@@ -374,7 +454,13 @@ F(x) = \int_{a}^{b} f(x) \, dx
         </div>
       </div>
       <div class="status-bar">
-        <span id="status">Готово</span>
+        <div style="display: flex; align-items: center;">
+          <span id="status">Готово</span>
+          <div id="session-info" class="session-info" style="display: none; margin-left: 10px;">
+            Сессия: <span id="session-id"></span>
+            <button id="copy-session">Копировать</button>
+          </div>
+        </div>
         <span id="cursor-position">Строка: 1, Столбец: 1</span>
       </div>
     </div>
@@ -418,12 +504,57 @@ F(x) = \int_{a}^{b} f(x) \, dx
       </div>
     </div>
   </div>
+  
+  <!-- Модальное окно для совместной работы -->
+  <div id="collab-modal" class="modal">
+    <div class="modal-content">
+      <span class="close">&times;</span>
+      <h2>Совместная работа</h2>
+      <div class="form-group">
+        <label for="session-name">Создать новую сессию:</label>
+        <input type="text" id="session-name" placeholder="Введите название сессии">
+        <button id="create-session-btn" style="margin-top: 10px;">Создать сессию</button>
+      </div>
+      <div class="form-group" style="margin-top: 20px;">
+        <label for="join-session">Присоединиться к сессии:</label>
+        <input type="text" id="join-session" placeholder="Введите ID сессии">
+        <button id="join-session-btn" style="margin-top: 10px;">Присоединиться</button>
+      </div>
+      <div class="form-group" style="margin-top: 20px;">
+        <label for="user-name">Ваше имя (опционально):</label>
+        <input type="text" id="user-name" placeholder="Введите ваше имя">
+      </div>
+    </div>
+  </div>
 
   <script>
     // Дождемся загрузки всех ресурсов
     document.addEventListener('DOMContentLoaded', function() {
+      // Глобальные переменные
+      let editor;
+      let isCollaborationActive = false;
+      let firebaseApp = null;
+      let firebaseDB = null;
+      let currentSessionId = null;
+      let lastSavedContent = '';
+      let autoSaveTimer = null;
+      let autoSaveDelay = 3000; // 3 секунды
+      let isTyping = false;
+      let lastTypingTime = 0;
+      let isInitialLoad = true;
+      
+      // Генерация случайного ID
+      function generateId(length = 8) {
+        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+        let result = '';
+        for (let i = 0; i < length; i++) {
+          result += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+        return result;
+      }
+      
       // Инициализация редактора CodeMirror
-      const editor = CodeMirror.fromTextArea(document.getElementById('editor'), {
+      editor = CodeMirror.fromTextArea(document.getElementById('editor'), {
         mode: "stex",
         lineNumbers: true,
         lineWrapping: true,
@@ -462,6 +593,234 @@ F(x) = \int_{a}^{b} f(x) \, dx
           }
         }
       });
+      
+      // ===== АВТОСОХРАНЕНИЕ =====
+      
+      // Функция автосохранения
+      function setupAutoSave() {
+        // Отслеживаем изменения в редакторе
+        editor.on("change", function() {
+          // Отметим, что пользователь печатает
+          isTyping = true;
+          lastTypingTime = Date.now();
+          
+          // Сбрасываем предыдущий таймер
+          if (autoSaveTimer) {
+            clearTimeout(autoSaveTimer);
+          }
+          
+          // Устанавливаем новый таймер для автосохранения
+          autoSaveTimer = setTimeout(function() {
+            // Проверяем, прошло ли достаточно времени с последнего ввода
+            if (Date.now() - lastTypingTime >= autoSaveDelay) {
+              isTyping = false;
+              autoSave();
+            }
+          }, autoSaveDelay);
+        });
+        
+        // Также сохраняем при потере фокуса
+        editor.on("blur", function() {
+          if (isTyping) {
+            isTyping = false;
+            autoSave();
+          }
+        });
+      }
+      
+      // Функция для выполнения автосохранения
+      function autoSave() {
+        const content = editor.getValue();
+        
+        // Проверяем, изменился ли контент с последнего сохранения
+        if (content !== lastSavedContent) {
+          // Показываем индикатор автосохранения
+          const autosaveIndicator = document.getElementById('autosave-indicator');
+          autosaveIndicator.classList.add('show');
+          
+          // Сохраняем локально
+          localStorage.setItem('latex-document', content);
+          lastSavedContent = content;
+          
+          // Если активна совместная работа, синхронизируем с Firebase
+          if (isCollaborationActive && firebaseDB && currentSessionId) {
+            // Здесь будет код для сохранения в Firebase
+            firebaseDB.ref('sessions/' + currentSessionId + '/content').set(content);
+          }
+          
+          // Обновляем статус
+          document.getElementById('status').textContent = "Автосохранение...";
+          
+          // Скрываем индикатор автосохранения через некоторое время
+          setTimeout(function() {
+            autosaveIndicator.classList.remove('show');
+            document.getElementById('status').textContent = "Готово";
+          }, 2000);
+        }
+      }
+      
+      // ===== СОВМЕСТНАЯ РАБОТА =====
+      
+      // Инициализация Firebase (заглушка - для реальной работы нужны реальные настройки)
+      function initFirebase() {
+        // Этот код предлагается как шаблон, но для реальной работы нужно
+        // создать проект в Firebase и вставить настройки
+        const firebaseConfig = {
+          apiKey: "YOUR_API_KEY",
+          authDomain: "YOUR_AUTH_DOMAIN",
+          databaseURL: "YOUR_DATABASE_URL",
+          projectId: "YOUR_PROJECT_ID",
+          storageBucket: "YOUR_STORAGE_BUCKET",
+          messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+          appId: "YOUR_APP_ID"
+        };
+        
+        // Проверяем, инициализирован ли уже Firebase
+        if (!firebaseApp) {
+          try {
+            // Инициализация Firebase (в реальном приложении)
+            // firebaseApp = firebase.initializeApp(firebaseConfig);
+            // firebaseDB = firebaseApp.database();
+            
+            // Для демонстрации мы просто будем имитировать совместную работу
+            console.log("Firebase имитация инициализирована");
+            
+            // В демо-режиме просто меняем индикатор
+            document.querySelector('.collaboration-status').classList.remove('inactive');
+            document.querySelector('.collaboration-status').classList.add('active');
+            document.getElementById('collaboration-text').textContent = "Имитация совместной работы";
+            
+            return true;
+          } catch (error) {
+            console.error("Ошибка инициализации Firebase:", error);
+            alert("Не удалось подключиться к Firebase. Проверьте консоль для деталей.");
+            return false;
+          }
+        }
+        return true;
+      }
+      
+      // Создание новой сессии
+      function createSession(sessionName) {
+        if (!initFirebase()) return;
+        
+        // Генерируем уникальный ID для сессии
+        const sessionId = sessionName.trim().toLowerCase().replace(/\s+/g, '-') + '-' + generateId();
+        
+        // В реальном приложении - создание сессии в Firebase
+        // const sessionRef = firebaseDB.ref('sessions/' + sessionId);
+        // sessionRef.set({
+        //   name: sessionName,
+        //   createdAt: firebase.database.ServerValue.TIMESTAMP,
+        //   content: editor.getValue()
+        // });
+        
+        // Устанавливаем текущую сессию
+        currentSessionId = sessionId;
+        
+        // Обновляем интерфейс
+        document.getElementById('session-id').textContent = sessionId;
+        document.getElementById('session-info').style.display = 'flex';
+        
+        // Активируем режим совместной работы
+        isCollaborationActive = true;
+        document.querySelector('.collaboration-status').classList.remove('inactive');
+        document.querySelector('.collaboration-status').classList.add('active');
+        document.getElementById('collaboration-text').textContent = "Сессия активна";
+        
+        // Закрываем модальное окно
+        document.getElementById('collab-modal').style.display = 'none';
+        
+        // Для демо - просто показываем ID сессии
+        alert("Сессия создана! ID: " + sessionId + "\nПоделитесь этим ID с другими пользователями для совместной работы.");
+      }
+      
+      // Присоединение к существующей сессии
+      function joinSession(sessionId) {
+        if (!initFirebase()) return;
+        
+        // Для демо - просто показываем, что присоединились к сессии
+        currentSessionId = sessionId;
+        
+        // Обновляем интерфейс
+        document.getElementById('session-id').textContent = sessionId;
+        document.getElementById('session-info').style.display = 'flex';
+        
+        // Активируем режим совместной работы
+        isCollaborationActive = true;
+        document.querySelector('.collaboration-status').classList.remove('inactive');
+        document.querySelector('.collaboration-status').classList.add('active');
+        document.getElementById('collaboration-text').textContent = "Сессия активна";
+        
+        // Закрываем модальное окно
+        document.getElementById('collab-modal').style.display = 'none';
+        
+        // Для демо - просто показываем сообщение
+        alert("Присоединились к сессии: " + sessionId);
+        
+        // В реальном приложении - получение данных из Firebase
+        // const sessionRef = firebaseDB.ref('sessions/' + sessionId);
+        // sessionRef.once('value').then(function(snapshot) {
+        //   if (snapshot.exists()) {
+        //     const sessionData = snapshot.val();
+        //     // Устанавливаем содержимое из сессии
+        //     editor.setValue(sessionData.content || '');
+        //   } else {
+        //     alert("Сессия не найдена!");
+        //   }
+        // }).catch(function(error) {
+        //   console.error("Ошибка при присоединении к сессии:", error);
+        //   alert("Ошибка при присоединении к сессии");
+        // });
+      }
+      
+      // Настройка слушателей для совместной работы
+      function setupCollaboration() {
+        // Кнопка для открытия модального окна совместной работы
+        document.getElementById('toggle-collab-btn').addEventListener('click', function() {
+          document.getElementById('collab-modal').style.display = 'block';
+        });
+        
+        // Закрытие модального окна
+        document.querySelectorAll('#collab-modal .close').forEach(function(closeBtn) {
+          closeBtn.addEventListener('click', function() {
+            document.getElementById('collab-modal').style.display = 'none';
+          });
+        });
+        
+        // Создание новой сессии
+        document.getElementById('create-session-btn').addEventListener('click', function() {
+          const sessionName = document.getElementById('session-name').value.trim();
+          if (sessionName) {
+            createSession(sessionName);
+          } else {
+            alert("Введите название сессии!");
+          }
+        });
+        
+        // Присоединение к существующей сессии
+        document.getElementById('join-session-btn').addEventListener('click', function() {
+          const sessionId = document.getElementById('join-session').value.trim();
+          if (sessionId) {
+            joinSession(sessionId);
+          } else {
+            alert("Введите ID сессии!");
+          }
+        });
+        
+        // Копирование ID сессии
+        document.getElementById('copy-session').addEventListener('click', function() {
+          const sessionId = document.getElementById('session-id').textContent;
+          navigator.clipboard.writeText(sessionId).then(function() {
+            alert("ID сессии скопирован в буфер обмена");
+          }, function(err) {
+            console.error('Не удалось скопировать ID: ', err);
+            alert("Не удалось скопировать ID. Попробуйте выделить и скопировать вручную.");
+          });
+        });
+      }
+      
+      // ===== ОСНОВНЫЕ ФУНКЦИИ РЕДАКТОРА =====
       
       // Обновление позиции курсора
       editor.on("cursorActivity", function() {
@@ -654,9 +1013,11 @@ F(x) = \int_{a}^{b} f(x) \, dx
         preview.style.transform = `scale(${scale})`;
       }
       
+      // ===== УПРАВЛЕНИЕ МАКРОСАМИ =====
+      
       // Управление макросами
       const macrosModal = document.getElementById('macros-modal');
-      const closeBtn = document.querySelector('.close');
+      const closeBtn = document.querySelector('#macros-modal .close');
       const addMacroBtn = document.getElementById('add-macro-btn');
       const macroNameInput = document.getElementById('macro-name');
       const macroContentInput = document.getElementById('macro-content');
@@ -781,6 +1142,7 @@ F(x) = \int_{a}^{b} f(x) \, dx
       document.getElementById('save-btn').addEventListener('click', function() {
         const content = editor.getValue();
         localStorage.setItem('latex-document', content);
+        lastSavedContent = content;
         document.getElementById('status').textContent = "Документ сохранен";
         
         setTimeout(() => {
@@ -788,11 +1150,22 @@ F(x) = \int_{a}^{b} f(x) \, dx
         }, 2000);
       });
       
+      // ===== ИНИЦИАЛИЗАЦИЯ И ЗАГРУЗКА ДОКУМЕНТА =====
+      
       // Загрузка сохраненного документа при старте
       const savedDocument = localStorage.getItem('latex-document');
       if (savedDocument) {
         editor.setValue(savedDocument);
+        lastSavedContent = savedDocument;
+      } else {
+        lastSavedContent = editor.getValue();
       }
+      
+      // Настройка автосохранения
+      setupAutoSave();
+      
+      // Настройка совместной работы
+      setupCollaboration();
       
       // Компилируем при первой загрузке
       setTimeout(compileLatex, 500);
