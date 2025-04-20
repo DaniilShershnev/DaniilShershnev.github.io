@@ -674,6 +674,33 @@
       }
     }
   </style>
+<style id="emergency-styles">
+  /* Аварийные стили для гарантированного отображения */
+  .editor-container, .preview-container {
+    min-height: 400px !important;
+    display: block !important;
+  }
+  
+  .CodeMirror {
+    height: 400px !important;
+    border: 1px solid #ccc !important;
+  }
+  
+  #pdf-preview {
+    min-height: 400px !important;
+    border: 1px solid #ddd !important;
+    margin: 10px !important;
+    padding: 20px !important;
+    background: white !important;
+  }
+  
+  /* Исправление для старых браузеров */
+  main {
+    display: block !important;
+    height: 600px !important;
+    overflow: auto !important;
+  }
+</style>
 </head>
 <body>
   <header>
@@ -939,6 +966,59 @@ F(x) = \int_{a}^{b} f(x) \, dx
   </div>
 
   <script>
+// Код для отладки и исправления проблем отображения
+window.addEventListener('load', function() {
+  setTimeout(function() {
+    console.log("Принудительная инициализация интерфейса");
+    
+    // Проверяем, инициализирован ли редактор
+    if (typeof editor === 'undefined' || !editor) {
+      console.error("Редактор не инициализирован, пробуем повторно");
+      
+      try {
+        // Пробуем инициализировать редактор напрямую
+        editor = CodeMirror.fromTextArea(document.getElementById('editor'), {
+          mode: "stex",
+          lineNumbers: true,
+          lineWrapping: true,
+          theme: "default"
+        });
+        
+        // Принудительно обновляем размер редактора
+        editor.refresh();
+        
+        // Компилируем содержимое
+        const latexCode = editor.getValue();
+        const preview = document.getElementById('pdf-preview');
+        if (preview) {
+          preview.innerHTML = '<div style="padding: 20px;">Предпросмотр LaTeX документа</div>';
+        }
+      } catch (err) {
+        console.error("Ошибка при повторной инициализации:", err);
+        
+        // Аварийное восстановление - просто отобразим текстовую область
+        const editorArea = document.getElementById('editor');
+        if (editorArea) {
+          editorArea.style.display = "block";
+          editorArea.style.width = "100%";
+          editorArea.style.height = "500px";
+        }
+      }
+    } else {
+      console.log("Редактор уже инициализирован, пробуем обновить");
+      editor.refresh();
+    }
+    
+    // Проверка загрузки библиотек
+    console.log("CodeMirror:", typeof CodeMirror !== 'undefined');
+    console.log("MathJax:", typeof MathJax !== 'undefined');
+    
+    // Установка минимальной высоты для контейнеров
+    document.querySelectorAll('.editor-container, .preview-container').forEach(el => {
+      el.style.minHeight = "500px";
+    });
+  }, 500);
+});
     // Дождемся загрузки всех ресурсов
     document.addEventListener('DOMContentLoaded', function() {
       // Глобальные переменные
