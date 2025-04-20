@@ -3,11 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>LaTeX Онлайн-редактор с предпросмотром</title>
+  <title>LaTeX Онлайн-редактор</title>
   
   <!-- CodeMirror для редактора кода -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.css">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/theme/monokai.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/theme/default.min.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/stex/stex.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/hint/show-hint.min.js"></script>
@@ -16,57 +16,49 @@
   <!-- MathJax для формул в подсказках -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.0/es5/tex-mml-chtml.min.js"></script>
   
-  <!-- PDF.js для отображения PDF -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.14.305/pdf.min.js"></script>
-  
-  <!-- TeXLive.js для компиляции LaTeX в браузере -->
-  <script src="https://cdn.jsdelivr.net/npm/texlive.js@0.1.5/dist/texlive.min.js"></script>
-  
   <style>
-    :root {
-      --primary-color: #3498db;
-      --secondary-color: #2c3e50;
-      --bg-color: #f9f9f9;
-      --text-color: #333;
-      --border-color: #ddd;
-      --success-color: #2ecc71;
-      --warning-color: #e67e22;
-      --error-color: #e74c3c;
-    }
-    
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
-    
     body {
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background-color: var(--bg-color);
-      color: var(--text-color);
-      line-height: A.5;
+      margin: 0;
+      padding: 0;
       height: 100vh;
       display: flex;
       flex-direction: column;
     }
     
     header {
-      background-color: var(--secondary-color);
+      background-color: #2c3e50;
       color: white;
-      padding: 1rem;
+      padding: 8px 16px;
       display: flex;
       justify-content: space-between;
       align-items: center;
     }
     
     header h1 {
-      font-size: 1.5rem;
+      font-size: 18px;
       font-weight: 500;
+      margin: 0;
     }
     
     .header-buttons {
       display: flex;
-      gap: 10px;
+      gap: 8px;
+    }
+    
+    button {
+      background-color: white;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      padding: 4px 10px;
+      cursor: pointer;
+      font-size: 14px;
+      transition: all 0.2s;
+    }
+    
+    button:hover {
+      background-color: #3498db;
+      color: white;
     }
     
     main {
@@ -79,7 +71,7 @@
       flex: 1;
       display: flex;
       flex-direction: column;
-      border-right: 1px solid var(--border-color);
+      border-right: 1px solid #ddd;
     }
     
     .preview-pane {
@@ -90,11 +82,11 @@
     }
     
     .toolbar {
-      background-color: white;
-      padding: 0.5rem;
-      border-bottom: 1px solid var(--border-color);
+      background-color: #f5f5f5;
+      padding: 4px;
+      border-bottom: 1px solid #ddd;
       display: flex;
-      gap: 5px;
+      gap: 4px;
       flex-wrap: wrap;
     }
     
@@ -113,8 +105,8 @@
       flex: 1;
       overflow: auto;
       background-color: white;
-      box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.1);
-      padding: 1rem;
+      box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.1);
+      padding: 16px;
       display: flex;
       justify-content: center;
       align-items: flex-start;
@@ -143,9 +135,9 @@
     .spinner {
       border: 4px solid rgba(0, 0, 0, 0.1);
       border-radius: 50%;
-      border-top: 4px solid var(--primary-color);
-      width: 40px;
-      height: 40px;
+      border-top: 4px solid #3498db;
+      width: 30px;
+      height: 30px;
       animation: spin 1s linear infinite;
     }
     
@@ -154,60 +146,11 @@
       100% { transform: rotate(360deg); }
     }
     
-    button {
-      background-color: white;
-      border: 1px solid var(--border-color);
-      border-radius: 4px;
-      padding: 5px 10px;
-      cursor: pointer;
-      font-size: 0.9rem;
-      transition: all 0.2s;
-      color: var(--text-color);
-    }
-    
-    button:hover {
-      background-color: var(--primary-color);
-      color: white;
-    }
-    
-    button.active {
-      background-color: var(--primary-color);
-      color: white;
-    }
-    
-    .tooltip {
-      position: relative;
-      display: inline-block;
-    }
-    
-    .tooltip .tooltiptext {
-      visibility: hidden;
-      width: 200px;
-      background-color: var(--secondary-color);
-      color: white;
-      text-align: center;
-      border-radius: 4px;
-      padding: 5px;
-      position: absolute;
-      z-index: 1;
-      bottom: 125%;
-      left: 50%;
-      transform: translateX(-50%);
-      opacity: 0;
-      transition: opacity 0.3s;
-      font-size: 0.8rem;
-    }
-    
-    .tooltip:hover .tooltiptext {
-      visibility: visible;
-      opacity: 1;
-    }
-    
     .status-bar {
-      background-color: var(--secondary-color);
+      background-color: #2c3e50;
       color: white;
-      padding: 0.3rem 1rem;
-      font-size: 0.9rem;
+      padding: 4px 12px;
+      font-size: 14px;
       display: flex;
       justify-content: space-between;
       align-items: center;
@@ -258,21 +201,21 @@
     input[type="text"], textarea {
       width: 100%;
       padding: 8px;
-      border: 1px solid var(--border-color);
+      border: 1px solid #ddd;
       border-radius: 4px;
     }
     
     .macro-list {
       max-height: 200px;
       overflow-y: auto;
-      border: 1px solid var(--border-color);
+      border: 1px solid #ddd;
       border-radius: 4px;
       margin-top: 10px;
     }
     
     .macro-item {
       padding: 5px 10px;
-      border-bottom: 1px solid var(--border-color);
+      border-bottom: 1px solid #ddd;
       display: flex;
       justify-content: space-between;
       align-items: center;
@@ -290,16 +233,11 @@
     .formula-preview {
       margin-top: 10px;
       padding: 10px;
-      border: 1px solid var(--border-color);
+      border: 1px solid #ddd;
       border-radius: 4px;
       background-color: white;
       text-align: center;
-    }
-    
-    .error-message {
-      color: var(--error-color);
-      font-size: 0.9rem;
-      margin-top: 5px;
+      min-height: 60px;
     }
     
     /* Адаптивный дизайн */
@@ -311,7 +249,7 @@
       .editor-pane, .preview-pane {
         flex: 1 0 50%;
         border-right: none;
-        border-bottom: 1px solid var(--border-color);
+        border-bottom: 1px solid #ddd;
       }
       
       .modal-content {
@@ -324,56 +262,23 @@
   <header>
     <h1>LaTeX Онлайн-редактор</h1>
     <div class="header-buttons">
-      <button id="compile-btn" class="tooltip">
-        Компилировать
-        <span class="tooltiptext">Скомпилировать LaTeX в PDF (Ctrl+Enter)</span>
-      </button>
-      <button id="manage-macros-btn" class="tooltip">
-        Макросы
-        <span class="tooltiptext">Управление пользовательскими макросами</span>
-      </button>
-      <button id="save-btn" class="tooltip">
-        Сохранить
-        <span class="tooltiptext">Сохранить документ</span>
-      </button>
+      <button id="compile-btn">Компилировать</button>
+      <button id="manage-macros-btn">Макросы</button>
+      <button id="save-btn">Сохранить</button>
     </div>
   </header>
   
   <main>
     <div class="editor-pane">
       <div class="toolbar">
-        <button data-insert="\section{}" class="tooltip">
-          Раздел
-          <span class="tooltiptext">Вставить секцию: \section{}</span>
-        </button>
-        <button data-insert="\subsection{}" class="tooltip">
-          Подраздел
-          <span class="tooltiptext">Вставить подсекцию: \subsection{}</span>
-        </button>
-        <button data-insert="\begin{equation}\n\n\end{equation}" class="tooltip">
-          Уравнение
-          <span class="tooltiptext">Вставить окружение equation</span>
-        </button>
-        <button data-insert="\begin{figure}\n\centering\n\includegraphics[width=0.8\textwidth]{}\n\caption{}\n\label{fig:}\n\end{figure}" class="tooltip">
-          Рисунок
-          <span class="tooltiptext">Вставить окружение figure</span>
-        </button>
-        <button data-insert="\begin{table}\n\centering\n\begin{tabular}{|c|c|}\n\hline\n & \\\\ \n\hline\n & \\\\ \n\hline\n\end{tabular}\n\caption{}\n\label{tab:}\n\end{table}" class="tooltip">
-          Таблица
-          <span class="tooltiptext">Вставить окружение table</span>
-        </button>
-        <button data-insert="\begin{itemize}\n\item \n\item \n\end{itemize}" class="tooltip">
-          Список
-          <span class="tooltiptext">Вставить ненумерованный список</span>
-        </button>
-        <button data-insert="\begin{enumerate}\n\item \n\item \n\end{enumerate}" class="tooltip">
-          Нумер. список
-          <span class="tooltiptext">Вставить нумерованный список</span>
-        </button>
-        <button data-insert="$$" class="tooltip">
-          Формула
-          <span class="tooltiptext">Вставить встроенную формулу: $$</span>
-        </button>
+        <button data-insert="\section{}">Раздел</button>
+        <button data-insert="\subsection{}">Подраздел</button>
+        <button data-insert="\begin{equation}\n\n\end{equation}">Уравнение</button>
+        <button data-insert="\begin{figure}\n\centering\n\includegraphics[width=0.8\textwidth]{}\n\caption{}\n\label{fig:}\n\end{figure}">Рисунок</button>
+        <button data-insert="\begin{table}\n\centering\n\begin{tabular}{|c|c|}\n\hline\n & \\\\ \n\hline\n & \\\\ \n\hline\n\end{tabular}\n\caption{}\n\label{tab:}\n\end{table}">Таблица</button>
+        <button data-insert="\begin{itemize}\n\item \n\item \n\end{itemize}">Список</button>
+        <button data-insert="\begin{enumerate}\n\item \n\item \n\end{enumerate}">Нумер. список</button>
+        <button data-insert="$$">Формула</button>
       </div>
       <div class="editor-container">
         <textarea id="editor">
@@ -427,18 +332,9 @@ F(x) = \int_{a}^{b} f(x) \, dx
     
     <div class="preview-pane">
       <div class="toolbar">
-        <button id="zoom-in" class="tooltip">
-          Увеличить
-          <span class="tooltiptext">Увеличить масштаб</span>
-        </button>
-        <button id="zoom-out" class="tooltip">
-          Уменьшить
-          <span class="tooltiptext">Уменьшить масштаб</span>
-        </button>
-        <button id="download-pdf" class="tooltip">
-          Скачать PDF
-          <span class="tooltiptext">Скачать скомпилированный PDF-файл</span>
-        </button>
+        <button id="zoom-in">Увеличить</button>
+        <button id="zoom-out">Уменьшить</button>
+        <button id="download-pdf">Скачать PDF</button>
       </div>
       <div class="preview-container">
         <iframe id="pdf-viewer"></iframe>
@@ -473,303 +369,284 @@ F(x) = \int_{a}^{b} f(x) \, dx
   </div>
 
   <script>
-    // Инициализация редактора CodeMirror
-    const editor = CodeMirror.fromTextArea(document.getElementById('editor'), {
-      mode: "stex",
-      theme: "monokai",
-      lineNumbers: true,
-      lineWrapping: true,
-      indentUnit: 2,
-      tabSize: 2,
-      autofocus: true,
-      extraKeys: {
-        "Ctrl-Enter": function() { compileLatex(); },
-        "Tab": function(cm) {
-          // Проверка для активации макроса
-          const cursor = cm.getCursor();
-          const line = cm.getLine(cursor.line);
-          const textBeforeCursor = line.substring(0, cursor.ch);
-          
-          // Проверяем, есть ли макрос для введенного текста
-          const macros = JSON.parse(localStorage.getItem('latex-macros') || '{}');
-          let macroFound = false;
-          
-          for (const key in macros) {
-            if (textBeforeCursor.endsWith(key)) {
-              // Удаляем триггер и вставляем содержимое макроса
-              const from = {
-                line: cursor.line,
-                ch: cursor.ch - key.length
-              };
-              cm.replaceRange(macros[key], from, cursor);
-              macroFound = true;
-              break;
+    // Дождемся загрузки всех ресурсов
+    document.addEventListener('DOMContentLoaded', function() {
+      // Инициализация редактора CodeMirror
+      const editor = CodeMirror.fromTextArea(document.getElementById('editor'), {
+        mode: "stex",
+        lineNumbers: true,
+        lineWrapping: true,
+        indentUnit: 2,
+        tabSize: 2,
+        autofocus: true,
+        extraKeys: {
+          "Ctrl-Enter": function() { compileLatex(); },
+          "Tab": function(cm) {
+            // Проверка для активации макроса
+            const cursor = cm.getCursor();
+            const line = cm.getLine(cursor.line);
+            const textBeforeCursor = line.substring(0, cursor.ch);
+            
+            // Проверяем, есть ли макрос для введенного текста
+            const macros = JSON.parse(localStorage.getItem('latex-macros') || '{}');
+            let macroFound = false;
+            
+            for (const key in macros) {
+              if (textBeforeCursor.endsWith(key)) {
+                // Удаляем триггер и вставляем содержимое макроса
+                const from = {
+                  line: cursor.line,
+                  ch: cursor.ch - key.length
+                };
+                cm.replaceRange(macros[key], from, cursor);
+                macroFound = true;
+                break;
+              }
+            }
+            
+            if (!macroFound) {
+              // Если макрос не найден, вставляем обычный таб
+              cm.replaceSelection("  ");
             }
           }
-          
-          if (!macroFound) {
-            // Если макрос не найден, вставляем обычный таб
-            cm.replaceSelection("  ");
-          }
         }
-      }
-    });
-    
-    // Обновление позиции курсора
-    editor.on("cursorActivity", function() {
-      const cursor = editor.getCursor();
-      document.getElementById('cursor-position').textContent = `Строка: ${cursor.line + 1}, Столбец: ${cursor.ch + 1}`;
-    });
-    
-    // Инициализация TeXLive.js
-    const pdfViewerElement = document.getElementById('pdf-viewer');
-    const loadingOverlay = document.querySelector('.loading-overlay');
-    const statusElement = document.getElementById('status');
-    
-    // Загружаем TeXLive.js
-    let texlive;
-    
-    window.addEventListener('load', function() {
-      // Имитация инициализации TeXLive (в реальном коде здесь будет инициализация)
-      setTimeout(() => {
-        statusElement.textContent = "TeXLive.js загружен";
-        // В реальности здесь нужно инициализировать TeXLive.js
-        // texlive = new TeXLive();
-        
-        // Компилируем при первой загрузке
-        compileLatex();
-      }, 1000);
-    });
-    
-    // Функция компиляции LaTeX
-    function compileLatex() {
-      const latexCode = editor.getValue();
-      
-      // Показываем индикатор загрузки
-      loadingOverlay.style.display = 'flex';
-      statusElement.textContent = "Компиляция...";
-      
-      // В реальном приложении здесь бы происходила компиляция через TeXLive.js
-      // Здесь мы имитируем процесс компиляции с задержкой
-      setTimeout(() => {
-        try {
-          // В реальности здесь происходила бы компиляция
-          // const result = texlive.compile(latexCode);
-          
-          // Имитируем успешную компиляцию, обновляя предпросмотр
-          // В реальности здесь был бы код для отображения PDF через PDF.js
-          pdfViewerElement.srcdoc = `
-            <html>
-              <body style="margin: 0; padding: 0; display: flex; justify-content: center; background-color: #f0f0f0;">
-                <div style="padding: 20px; background-color: white; box-shadow: 0 0 10px rgba(0,0,0,0.1); margin: 20px; width: 210mm; min-height: 297mm;">
-                  <h1>Название документа</h1>
-                  <p>Документ скомпилирован успешно.</p>
-                  <p>В реальном приложении здесь будет отображаться PDF, созданный из вашего LaTeX кода.</p>
-                  <p>Формула: \(E = mc^2\)</p>
-                </div>
-              </body>
-              <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.0/es5/tex-mml-chtml.min.js"></script>
-            </html>
-          `;
-          
-          statusElement.textContent = "Компиляция завершена";
-          
-        } catch (error) {
-          statusElement.textContent = "Ошибка компиляции: " + error.message;
-        } finally {
-          loadingOverlay.style.display = 'none';
-        }
-      }, 1500);
-    }
-    
-    // Кнопка компиляции
-    document.getElementById('compile-btn').addEventListener('click', compileLatex);
-    
-    // Вставка шаблонов из кнопок панели инструментов
-    document.querySelectorAll('.toolbar button[data-insert]').forEach(button => {
-      button.addEventListener('click', function() {
-        const template = this.getAttribute('data-insert');
-        const cursor = editor.getCursor();
-        editor.replaceRange(template, cursor);
-        
-        // Устанавливаем курсор внутри вставленного шаблона
-        if (template.includes('{}')) {
-          const newPosition = {
-            line: cursor.line,
-            ch: cursor.ch + template.indexOf('{}') + 1
-          };
-          editor.setCursor(newPosition);
-        } else if (template.includes('\n')) {
-          const lines = template.split('\n');
-          const newPosition = {
-            line: cursor.line + 1,
-            ch: lines[1].length
-          };
-          editor.setCursor(newPosition);
-        }
-        
-        editor.focus();
       });
-    });
-    
-    // Управление масштабом
-    let scale = 1.0;
-    document.getElementById('zoom-in').addEventListener('click', function() {
-      scale += 0.1;
-      updateZoom();
-    });
-    
-    document.getElementById('zoom-out').addEventListener('click', function() {
-      if (scale > 0.5) {
-        scale -= 0.1;
+      
+      // Обновление позиции курсора
+      editor.on("cursorActivity", function() {
+        const cursor = editor.getCursor();
+        document.getElementById('cursor-position').textContent = `Строка: ${cursor.line + 1}, Столбец: ${cursor.ch + 1}`;
+      });
+      
+      // Кнопка компиляции
+      document.getElementById('compile-btn').addEventListener('click', compileLatex);
+      
+      // Функция компиляции LaTeX
+      function compileLatex() {
+        const latexCode = editor.getValue();
+        
+        // Показываем индикатор загрузки
+        document.querySelector('.loading-overlay').style.display = 'flex';
+        document.getElementById('status').textContent = "Компиляция...";
+        
+        // В реальном приложении здесь бы происходила компиляция через TeXLive.js
+        // Здесь мы имитируем процесс компиляции с задержкой
+        setTimeout(() => {
+          try {
+            // Имитируем успешную компиляцию, обновляя предпросмотр
+            document.getElementById('pdf-viewer').srcdoc = `
+              <html>
+                <body style="margin: 0; padding: 0; display: flex; justify-content: center; background-color: #f0f0f0;">
+                  <div style="padding: 20px; background-color: white; box-shadow: 0 0 10px rgba(0,0,0,0.1); margin: 20px; width: 210mm; min-height: 297mm;">
+                    <h1>Название документа</h1>
+                    <p>Документ скомпилирован успешно.</p>
+                    <p>В реальном приложении здесь будет отображаться PDF, созданный из вашего LaTeX кода.</p>
+                    <p>Формула: \(E = mc^2\)</p>
+                  </div>
+                </body>
+                <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.0/es5/tex-mml-chtml.min.js"><\/script>
+              </html>
+            `;
+            
+            document.getElementById('status').textContent = "Компиляция завершена";
+            
+          } catch (error) {
+            document.getElementById('status').textContent = "Ошибка компиляции: " + error.message;
+          } finally {
+            document.querySelector('.loading-overlay').style.display = 'none';
+          }
+        }, 1500);
+      }
+      
+      // Вставка шаблонов из кнопок панели инструментов
+      document.querySelectorAll('.toolbar button[data-insert]').forEach(button => {
+        button.addEventListener('click', function() {
+          const template = this.getAttribute('data-insert');
+          const cursor = editor.getCursor();
+          editor.replaceRange(template, cursor);
+          
+          // Устанавливаем курсор внутри вставленного шаблона
+          if (template.includes('{}')) {
+            const newPosition = {
+              line: cursor.line,
+              ch: cursor.ch + template.indexOf('{}') + 1
+            };
+            editor.setCursor(newPosition);
+          } else if (template.includes('\n')) {
+            const lines = template.split('\n');
+            const newPosition = {
+              line: cursor.line + 1,
+              ch: lines[1].length
+            };
+            editor.setCursor(newPosition);
+          }
+          
+          editor.focus();
+        });
+      });
+      
+      // Управление масштабом
+      let scale = 1.0;
+      
+      document.getElementById('zoom-in').addEventListener('click', function() {
+        scale += 0.1;
         updateZoom();
-      }
-    });
-    
-    function updateZoom() {
-      const contentElement = pdfViewerElement.contentDocument.body.firstElementChild;
-      if (contentElement) {
-        contentElement.style.transform = `scale(${scale})`;
-        contentElement.style.transformOrigin = 'top center';
-      }
-    }
-    
-    // Управление макросами
-    const macrosModal = document.getElementById('macros-modal');
-    const closeBtn = document.querySelector('.close');
-    const addMacroBtn = document.getElementById('add-macro-btn');
-    const macroNameInput = document.getElementById('macro-name');
-    const macroContentInput = document.getElementById('macro-content');
-    const macroList = document.getElementById('macro-list');
-    const macroPreview = document.getElementById('macro-preview');
-    
-    // Открываем модальное окно
-    document.getElementById('manage-macros-btn').addEventListener('click', function() {
-      macrosModal.style.display = 'block';
-      renderMacrosList();
-    });
-    
-    // Закрываем модальное окно
-    closeBtn.addEventListener('click', function() {
-      macrosModal.style.display = 'none';
-    });
-    
-    // Закрываем модальное окно при клике вне его
-    window.addEventListener('click', function(event) {
-      if (event.target === macrosModal) {
-        macrosModal.style.display = 'none';
-      }
-    });
-    
-    // Добавление макроса
-    addMacroBtn.addEventListener('click', function() {
-      const name = macroNameInput.value.trim();
-      const content = macroContentInput.value;
+      });
       
-      if (name && content) {
-        const macros = JSON.parse(localStorage.getItem('latex-macros') || '{}');
-        macros[name] = content;
-        localStorage.setItem('latex-macros', JSON.stringify(macros));
-        
-        macroNameInput.value = '';
-        macroContentInput.value = '';
-        macroPreview.innerHTML = '';
-        
-        renderMacrosList();
-      }
-    });
-    
-    // Предпросмотр формулы из макроса
-    macroContentInput.addEventListener('input', function() {
-      const content = this.value;
-      
-      // Если похоже на формулу, показываем предпросмотр
-      if (content.includes('$') || content.includes('\\begin{equation}')) {
-        macroPreview.innerHTML = content
-          .replace(/\\begin{equation}/g, '$$')
-          .replace(/\\end{equation}/g, '$$');
-        
-        // Запускаем MathJax для рендеринга формулы
-        if (typeof MathJax !== 'undefined') {
-          MathJax.typeset([macroPreview]);
+      document.getElementById('zoom-out').addEventListener('click', function() {
+        if (scale > 0.5) {
+          scale -= 0.1;
+          updateZoom();
         }
-      } else {
-        macroPreview.textContent = content;
-      }
-    });
-    
-    // Отображение списка макросов
-    function renderMacrosList() {
-      const macros = JSON.parse(localStorage.getItem('latex-macros') || '{}');
-      macroList.innerHTML = '';
+      });
       
-      for (const key in macros) {
-        const macroItem = document.createElement('div');
-        macroItem.className = 'macro-item';
+      function updateZoom() {
+        const contentDocument = document.getElementById('pdf-viewer').contentDocument;
+        if (contentDocument && contentDocument.body && contentDocument.body.firstElementChild) {
+          contentDocument.body.firstElementChild.style.transform = `scale(${scale})`;
+          contentDocument.body.firstElementChild.style.transformOrigin = 'top center';
+        }
+      }
+      
+      // Управление макросами
+      const macrosModal = document.getElementById('macros-modal');
+      const closeBtn = document.querySelector('.close');
+      const addMacroBtn = document.getElementById('add-macro-btn');
+      const macroNameInput = document.getElementById('macro-name');
+      const macroContentInput = document.getElementById('macro-content');
+      const macroList = document.getElementById('macro-list');
+      const macroPreview = document.getElementById('macro-preview');
+      
+      // Открываем модальное окно
+      document.getElementById('manage-macros-btn').addEventListener('click', function() {
+        macrosModal.style.display = 'block';
+        renderMacrosList();
+      });
+      
+      // Закрываем модальное окно
+      closeBtn.addEventListener('click', function() {
+        macrosModal.style.display = 'none';
+      });
+      
+      // Закрываем модальное окно при клике вне его
+      window.addEventListener('click', function(event) {
+        if (event.target === macrosModal) {
+          macrosModal.style.display = 'none';
+        }
+      });
+      
+      // Добавление макроса
+      addMacroBtn.addEventListener('click', function() {
+        const name = macroNameInput.value.trim();
+        const content = macroContentInput.value;
         
-        const macroName = document.createElement('div');
-        macroName.textContent = key;
+        if (name && content) {
+          const macros = JSON.parse(localStorage.getItem('latex-macros') || '{}');
+          macros[name] = content;
+          localStorage.setItem('latex-macros', JSON.stringify(macros));
+          
+          macroNameInput.value = '';
+          macroContentInput.value = '';
+          macroPreview.innerHTML = '';
+          
+          renderMacrosList();
+        }
+      });
+      
+      // Предпросмотр формулы из макроса
+      macroContentInput.addEventListener('input', function() {
+        const content = this.value;
         
-        const macroActions = document.createElement('div');
-        macroActions.className = 'macro-actions';
-        
-        const editBtn = document.createElement('button');
-        editBtn.textContent = 'Ред.';
-        editBtn.addEventListener('click', function() {
-          macroNameInput.value = key;
-          macroContentInput.value = macros[key];
-          macroPreview.innerHTML = macros[key];
+        // Если похоже на формулу, показываем предпросмотр
+        if (content.includes('$') || content.includes('\\begin{equation}')) {
+          macroPreview.innerHTML = content
+            .replace(/\\begin{equation}/g, '$$')
+            .replace(/\\end{equation}/g, '$$');
           
           // Запускаем MathJax для рендеринга формулы
           if (typeof MathJax !== 'undefined') {
             MathJax.typeset([macroPreview]);
           }
-        });
+        } else {
+          macroPreview.textContent = content;
+        }
+      });
+      
+      // Отображение списка макросов
+      function renderMacrosList() {
+        const macros = JSON.parse(localStorage.getItem('latex-macros') || '{}');
+        macroList.innerHTML = '';
         
-        const deleteBtn = document.createElement('button');
-        deleteBtn.textContent = 'Удалить';
-        deleteBtn.addEventListener('click', function() {
-          delete macros[key];
-          localStorage.setItem('latex-macros', JSON.stringify(macros));
-          renderMacrosList();
-        });
+        for (const key in macros) {
+          const macroItem = document.createElement('div');
+          macroItem.className = 'macro-item';
+          
+          const macroName = document.createElement('div');
+          macroName.textContent = key;
+          
+          const macroActions = document.createElement('div');
+          macroActions.className = 'macro-actions';
+          
+          const editBtn = document.createElement('button');
+          editBtn.textContent = 'Ред.';
+          editBtn.addEventListener('click', function() {
+            macroNameInput.value = key;
+            macroContentInput.value = macros[key];
+            macroPreview.innerHTML = macros[key];
+            
+            // Запускаем MathJax для рендеринга формулы
+            if (typeof MathJax !== 'undefined') {
+              MathJax.typeset([macroPreview]);
+            }
+          });
+          
+          const deleteBtn = document.createElement('button');
+          deleteBtn.textContent = 'Удалить';
+          deleteBtn.addEventListener('click', function() {
+            delete macros[key];
+            localStorage.setItem('latex-macros', JSON.stringify(macros));
+            renderMacrosList();
+          });
+          
+          macroActions.appendChild(editBtn);
+          macroActions.appendChild(deleteBtn);
+          
+          macroItem.appendChild(macroName);
+          macroItem.appendChild(macroActions);
+          
+          macroList.appendChild(macroItem);
+        }
         
-        macroActions.appendChild(editBtn);
-        macroActions.appendChild(deleteBtn);
-        
-        macroItem.appendChild(macroName);
-        macroItem.appendChild(macroActions);
-        
-        macroList.appendChild(macroItem);
+        if (Object.keys(macros).length === 0) {
+          macroList.innerHTML = '<div class="macro-item">Нет сохраненных макросов</div>';
+        }
       }
       
-      if (Object.keys(macros).length === 0) {
-        macroList.innerHTML = '<div class="macro-item">Нет сохраненных макросов</div>';
-      }
-    }
-    
-    // Скачивание PDF
-    document.getElementById('download-pdf').addEventListener('click', function() {
-      // В реальном приложении здесь был бы код для скачивания PDF
-      alert('В реальном приложении эта кнопка позволит скачать скомпилированный PDF-файл.');
-    });
-    
-    // Сохранение документа
-    document.getElementById('save-btn').addEventListener('click', function() {
-      const content = editor.getValue();
-      localStorage.setItem('latex-document', content);
-      statusElement.textContent = "Документ сохранен";
+      // Скачивание PDF
+      document.getElementById('download-pdf').addEventListener('click', function() {
+        alert('В реальном приложении эта кнопка позволит скачать скомпилированный PDF-файл.');
+      });
       
-      setTimeout(() => {
-        statusElement.textContent = "Готово";
-      }, 2000);
+      // Сохранение документа
+      document.getElementById('save-btn').addEventListener('click', function() {
+        const content = editor.getValue();
+        localStorage.setItem('latex-document', content);
+        document.getElementById('status').textContent = "Документ сохранен";
+        
+        setTimeout(() => {
+          document.getElementById('status').textContent = "Готово";
+        }, 2000);
+      });
+      
+      // Загрузка сохраненного документа при старте
+      const savedDocument = localStorage.getItem('latex-document');
+      if (savedDocument) {
+        editor.setValue(savedDocument);
+      }
+      
+      // Компилируем при первой загрузке
+      setTimeout(compileLatex, 1000);
     });
-    
-    // Загрузка сохраненного документа при старте
-    const savedDocument = localStorage.getItem('latex-document');
-    if (savedDocument) {
-      editor.setValue(savedDocument);
-    }
   </script>
 </body>
 </html>
