@@ -20,17 +20,11 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/edit/closebrackets.min.js"></script>
   
   <!-- Firebase для совместной работы -->
-  <script src="https://www.gstatic.com/firebasejs/9.20.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.20.0/firebase-database-compat.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.6.5/firebase-app-compat.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.6.5/firebase-database-compat.min.js"></script>
   
   <!-- MathJax для формул в подсказках и предпросмотре -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.0/es5/tex-mml-chtml.min.js"></script>
-  
-  <!-- Yjs и связанные библиотеки для совместной работы -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/y-codemirror/3.0.1/y-codemirror.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/y-websocket/1.5.0/y-websocket.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/yjs/13.5.52/y.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/y-protocols/1.0.5/y-protocols.min.js"></script>
   
   <style>
     body {
@@ -608,50 +602,6 @@
       margin-left: 5px;
     }
     
-    /* Стили для отображения удаленных курсоров */
-    .remote-cursor {
-      position: absolute;
-      width: 2px;
-      height: 16px;
-      background-color: #f39c12;
-      z-index: 10;
-      pointer-events: none;
-    }
-    
-    .remote-cursor::after {
-      content: attr(data-name);
-      position: absolute;
-      top: -18px;
-      left: 0;
-      background-color: #f39c12;
-      color: white;
-      padding: 2px 4px;
-      border-radius: 3px;
-      font-size: 10px;
-      white-space: nowrap;
-    }
-    
-    .remote-selection {
-      background-color: rgba(243, 156, 18, 0.2);
-      position: absolute;
-      z-index: 1;
-      pointer-events: none;
-    }
-    
-    .remote-user-badge {
-      display: inline-flex;
-      align-items: center;
-      margin-right: 10px;
-      margin-bottom: 5px;
-    }
-    
-    .user-color {
-      width: 12px;
-      height: 12px;
-      border-radius: 50%;
-      margin-right: 5px;
-    }
-    
     /* Адаптивный дизайн */
     @media (max-width: 768px) {
       main {
@@ -674,33 +624,6 @@
       }
     }
   </style>
-<style id="emergency-styles">
-  /* Аварийные стили для гарантированного отображения */
-  .editor-container, .preview-container {
-    min-height: 400px !important;
-    display: block !important;
-  }
-  
-  .CodeMirror {
-    height: 400px !important;
-    border: 1px solid #ccc !important;
-  }
-  
-  #pdf-preview {
-    min-height: 400px !important;
-    border: 1px solid #ddd !important;
-    margin: 10px !important;
-    padding: 20px !important;
-    background: white !important;
-  }
-  
-  /* Исправление для старых браузеров */
-  main {
-    display: block !important;
-    height: 600px !important;
-    overflow: auto !important;
-  }
-</style>
 </head>
 <body>
   <header>
@@ -966,59 +889,6 @@ F(x) = \int_{a}^{b} f(x) \, dx
   </div>
 
   <script>
-// Код для отладки и исправления проблем отображения
-window.addEventListener('load', function() {
-  setTimeout(function() {
-    console.log("Принудительная инициализация интерфейса");
-    
-    // Проверяем, инициализирован ли редактор
-    if (typeof editor === 'undefined' || !editor) {
-      console.error("Редактор не инициализирован, пробуем повторно");
-      
-      try {
-        // Пробуем инициализировать редактор напрямую
-        editor = CodeMirror.fromTextArea(document.getElementById('editor'), {
-          mode: "stex",
-          lineNumbers: true,
-          lineWrapping: true,
-          theme: "default"
-        });
-        
-        // Принудительно обновляем размер редактора
-        editor.refresh();
-        
-        // Компилируем содержимое
-        const latexCode = editor.getValue();
-        const preview = document.getElementById('pdf-preview');
-        if (preview) {
-          preview.innerHTML = '<div style="padding: 20px;">Предпросмотр LaTeX документа</div>';
-        }
-      } catch (err) {
-        console.error("Ошибка при повторной инициализации:", err);
-        
-        // Аварийное восстановление - просто отобразим текстовую область
-        const editorArea = document.getElementById('editor');
-        if (editorArea) {
-          editorArea.style.display = "block";
-          editorArea.style.width = "100%";
-          editorArea.style.height = "500px";
-        }
-      }
-    } else {
-      console.log("Редактор уже инициализирован, пробуем обновить");
-      editor.refresh();
-    }
-    
-    // Проверка загрузки библиотек
-    console.log("CodeMirror:", typeof CodeMirror !== 'undefined');
-    console.log("MathJax:", typeof MathJax !== 'undefined');
-    
-    // Установка минимальной высоты для контейнеров
-    document.querySelectorAll('.editor-container, .preview-container').forEach(el => {
-      el.style.minHeight = "500px";
-    });
-  }, 500);
-});
     // Дождемся загрузки всех ресурсов
     document.addEventListener('DOMContentLoaded', function() {
       // Глобальные переменные
@@ -1036,27 +906,6 @@ window.addEventListener('load', function() {
       let lastTypingTime = 0;
       let isInitialLoad = true;
       let currentFileName = 'document1.tex';
-      let userColor = null;
-      let userId = null;
-      let userName = 'Пользователь';
-      let remoteCursors = {};
-      let lastCursorPosition = null;
-      let ignoreNextChange = false;
-      let yDoc = null;
-      let yText = null;
-      let yUndoManager = null;
-      let provider = null;
-      
-      // Настройки Firebase
-      const firebaseConfig = {
-        apiKey: "AIzaSyBxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
-        authDomain: "latex-editor-xxxxx.firebaseapp.com",
-        databaseURL: "https://latex-editor-xxxxx.firebaseio.com",
-        projectId: "latex-editor-xxxxx",
-        storageBucket: "latex-editor-xxxxx.appspot.com",
-        messagingSenderId: "xxxxxxxxxxxx",
-        appId: "1:xxxxxxxxxxxx:web:xxxxxxxxxxxxxxxxxxxx"
-      };
       
       // Настройки
       let settings = {
@@ -1091,21 +940,6 @@ window.addEventListener('load', function() {
           result += chars.charAt(Math.floor(Math.random() * chars.length));
         }
         return result;
-      }
-      
-      // Генерация случайного цвета для пользователя
-      function generateRandomColor() {
-        const colors = [
-          '#3498db', // синий
-          '#2ecc71', // зеленый
-          '#e74c3c', // красный
-          '#9b59b6', // фиолетовый
-          '#f1c40f', // желтый
-          '#e67e22', // оранжевый
-          '#1abc9c', // бирюзовый
-          '#34495e'  // темно-синий
-        ];
-        return colors[Math.floor(Math.random() * colors.length)];
       }
       
       // LaTeX команды для подсказок
@@ -1400,14 +1234,7 @@ window.addEventListener('load', function() {
         // Загружаем выбранный файл
         const fileContent = localStorage.getItem(`latex-document-${fileName}`);
         if (fileContent) {
-          // Если включена совместная работа, обновляем контент через Yjs
-          if (isCollaborationActive && yText) {
-            yText.delete(0, yText.length);
-            yText.insert(0, fileContent);
-          } else {
-            editor.setValue(fileContent);
-          }
-          
+          editor.setValue(fileContent);
           currentFileName = fileName;
           document.getElementById('current-file').textContent = `Файл: ${fileName}`;
           
@@ -1478,13 +1305,7 @@ window.addEventListener('load', function() {
       // Функция автосохранения
       function setupAutoSave() {
         // Отслеживаем изменения в редакторе
-        editor.on("change", function(cm, changeObj) {
-          // Пропускаем изменения, вызванные синхронизацией
-          if (ignoreNextChange) {
-            ignoreNextChange = false;
-            return;
-          }
-          
+        editor.on("change", function() {
           // Отметим, что пользователь печатает
           isTyping = true;
           lastTypingTime = Date.now();
@@ -1525,11 +1346,6 @@ window.addEventListener('load', function() {
               }, 2000);
             }, autoCompileDelay);
           }
-          
-          // Отправляем позицию курсора, если включена совместная работа
-          if (isCollaborationActive && firebaseDB && currentSessionId) {
-            updateCursorPosition();
-          }
         });
         
         // Также сохраняем при потере фокуса
@@ -1537,13 +1353,6 @@ window.addEventListener('load', function() {
           if (isTyping && settings.autoSaveEnabled) {
             isTyping = false;
             autoSave();
-          }
-        });
-        
-        // Отслеживаем перемещение курсора для совместной работы
-        editor.on("cursorActivity", function() {
-          if (isCollaborationActive && firebaseDB && currentSessionId) {
-            updateCursorPosition();
           }
         });
       }
@@ -1563,7 +1372,10 @@ window.addEventListener('load', function() {
           lastSavedContent = content;
           
           // Если активна совместная работа, синхронизируем с Firebase
-          // (но это делается автоматически через Yjs)
+          if (isCollaborationActive && firebaseDB && currentSessionId) {
+            // Здесь будет код для сохранения в Firebase
+            firebaseDB.ref('sessions/' + currentSessionId + '/content').set(content);
+          }
           
           // Обновляем статус
           document.getElementById('status').textContent = "Автосохранение...";
@@ -1578,110 +1390,17 @@ window.addEventListener('load', function() {
       
       // ===== СОВМЕСТНАЯ РАБОТА =====
       
-      // Инициализация Firebase
+      // Инициализация Firebase (заглушка - для реальной работы нужны реальные настройки)
       function initFirebase() {
-        try {
-          // Инициализируем Firebase, если еще не инициализирован
-          if (!firebaseApp) {
-            firebaseApp = firebase.initializeApp(firebaseConfig);
-            firebaseDB = firebase.database();
-          }
-          
-          // Изменяем индикатор
-          document.querySelector('.collaboration-status').classList.remove('inactive');
-          document.querySelector('.collaboration-status').classList.add('active');
-          document.getElementById('collaboration-text').textContent = "Сессия активна";
-          
-          return true;
-        } catch (error) {
-          console.error("Ошибка инициализации Firebase:", error);
-          alert("Ошибка при запуске совместной работы. Проверьте подключение к интернету и обновите страницу.");
-          return false;
-        }
-      }
-      
-      // Инициализация Yjs для совместной работы
-      function initYjs(sessionId) {
-        try {
-          // Создаем новый Yjs документ
-          yDoc = new Y.Doc();
-          
-          // Создаем общий текстовый тип для редактора
-          yText = yDoc.getText('codemirror');
-          
-          // Создаем менеджер отмены операций
-          yUndoManager = new Y.UndoManager(yText);
-          
-          // Настраиваем связь редактора CodeMirror и Yjs
-          const yBinding = new window.CodemirrorBinding(yText, editor, userId);
-          
-          // Настраиваем провайдера для синхронизации с Firebase
-          provider = new window.YWebsocket(`wss://webrtc-signaling.example.com/${sessionId}`);
-          
-          // В случае ошибки с WebSocket, можно использовать IndexedDB для локального хранения
-          const indexeddbProvider = new window.Y.IndexeddbPersistence(sessionId, yDoc);
-          
-          // Слушаем событие синхронизации
-          provider.on('sync', () => {
-            console.log('Синхронизация Yjs успешно завершена');
-          });
-          
-          // Обработка подключений других пользователей
-          provider.awareness.on('change', () => {
-            updateUsersList();
-          });
-          
-          // Обновляем информацию о себе в awareness
-          provider.awareness.setLocalStateField('user', {
-            name: userName,
-            color: userColor,
-            id: userId
-          });
-          
-          return true;
-        } catch (error) {
-          console.error("Ошибка инициализации Yjs:", error);
-          alert("Ошибка при настройке совместной работы. Пожалуйста, обновите страницу и попробуйте снова.");
-          return false;
-        }
-      }
-      
-      // Функция для обновления списка пользователей
-      function updateUsersList() {
-        if (!provider || !provider.awareness) return;
+        // В реальном приложении тут будет настоящая инициализация Firebase
+        console.log("Firebase имитация инициализирована");
         
-        const usersContainer = document.getElementById('active-users');
-        usersContainer.innerHTML = '';
+        // Изменяем индикатор
+        document.querySelector('.collaboration-status').classList.remove('inactive');
+        document.querySelector('.collaboration-status').classList.add('active');
+        document.getElementById('collaboration-text').textContent = "Сессия активна";
         
-        // Получаем список всех пользователей из awareness
-        const states = provider.awareness.getStates();
-        const activeUsers = [];
-        
-        states.forEach((state, clientId) => {
-          if (state.user) {
-            activeUsers.push({
-              id: state.user.id || clientId.toString(),
-              name: state.user.name || 'Гость',
-              color: state.user.color || '#cccccc',
-              isCurrentUser: state.user.id === userId
-            });
-          }
-        });
-        
-        // Отображаем пользователей
-        activeUsers.forEach(user => {
-          const userEl = document.createElement('div');
-          userEl.className = 'remote-user-badge';
-          userEl.innerHTML = `
-            <span class="user-color" style="background-color: ${user.color}"></span>
-            <span>${user.name} ${user.isCurrentUser ? '(Вы)' : ''}</span>
-          `;
-          usersContainer.appendChild(userEl);
-        });
-        
-        if (activeUsers.length === 0) {
-          usersContainer.innerHTML = '<p style="color: #666; font-style: italic;">Не подключено к сессии</p>';
-        }
+        return true;
       }
       
       // Создание новой сессии
@@ -1691,47 +1410,15 @@ window.addEventListener('load', function() {
         // Генерируем уникальный ID для сессии
         const sessionId = generateId(12);
         
-        // Генерируем уникальный ID пользователя и цвет
-        userId = generateId(8);
-        userColor = generateRandomColor();
-        userName = document.getElementById('user-name').value || 'Пользователь';
-        
         // Устанавливаем текущую сессию
         currentSessionId = sessionId;
-        
-        // Инициализируем Yjs
-        if (!initYjs(sessionId)) return;
-        
-        // Создаем запись в Firebase о новой сессии
-        firebaseDB.ref('sessions/' + sessionId).set({
-          createdAt: firebase.database.ServerValue.TIMESTAMP,
-          createdBy: userId,
-          users: {
-            [userId]: {
-              name: userName,
-              color: userColor,
-              online: true,
-              lastActive: firebase.database.ServerValue.TIMESTAMP
-            }
-          },
-          files: {
-            [currentFileName]: {
-              lastModified: firebase.database.ServerValue.TIMESTAMP
-            }
-          }
-        });
-        
-        // Загружаем содержимое текущего документа в Yjs
-        const content = editor.getValue();
-        yText.delete(0, yText.length);
-        yText.insert(0, content);
         
         // Обновляем интерфейс
         document.getElementById('session-id').textContent = sessionId;
         document.getElementById('session-info').style.display = 'flex';
         
         // Формируем ссылку для приглашения
-        const inviteLink = `${window.location.origin}${window.location.pathname}?session=${sessionId}`;
+        const inviteLink = `https://latex-editor.com/join?session=${sessionId}`;
         document.getElementById('invite-link').innerHTML = inviteLink + 
           '<button class="copy-btn" id="copy-invite">Копировать</button>';
         document.getElementById('session-link-container').style.display = 'block';
@@ -1748,11 +1435,13 @@ window.addEventListener('load', function() {
         // Активируем режим совместной работы
         isCollaborationActive = true;
         
-        // Обновляем список пользователей
-        updateUsersList();
-        
-        // Закрываем модальное окно
-        document.getElementById('collab-modal').style.display = 'none';
+        // Симуляция добавления пользователей
+        document.getElementById('active-users').innerHTML = `
+          <div style="display: flex; align-items: center; margin-bottom: 5px;">
+            <span style="width: 20px; height: 20px; border-radius: 50%; background-color: #3498db; color: white; text-align: center; line-height: 20px; margin-right: 8px;">В</span>
+            <span>Вы (создатель сессии)</span>
+          </div>
+        `;
         
         return sessionId;
       }
@@ -1766,203 +1455,42 @@ window.addEventListener('load', function() {
           sessionId = sessionId.split('?session=')[1];
         }
         
-        // Проверяем существование сессии
-        firebaseDB.ref('sessions/' + sessionId).once('value', snapshot => {
-          if (snapshot.exists()) {
-            // Генерируем уникальный ID пользователя и цвет
-            userId = generateId(8);
-            userColor = generateRandomColor();
-            userName = document.getElementById('user-name').value || 'Гость';
-            
-            // Устанавливаем текущую сессию
-            currentSessionId = sessionId;
-            
-            // Инициализируем Yjs
-            if (!initYjs(sessionId)) return;
-            
-            // Добавляем себя в список пользователей сессии
-            firebaseDB.ref('sessions/' + sessionId + '/users/' + userId).set({
-              name: userName,
-              color: userColor,
-              online: true,
-              lastActive: firebase.database.ServerValue.TIMESTAMP
-            });
-            
-            // Обновляем интерфейс
-            document.getElementById('session-id').textContent = sessionId;
-            document.getElementById('session-info').style.display = 'flex';
-            
-            // Активируем режим совместной работы
-            isCollaborationActive = true;
-            
-            // Обновляем список пользователей
-            updateUsersList();
-            
-            // Настраиваем отслеживание курсоров
-            setupCursorTracking();
-            
-            // Закрываем модальное окно
-            document.getElementById('collab-modal').style.display = 'none';
-            
-            // Уведомляем об успешном присоединении
-            alert(`Вы присоединились к сессии: ${sessionId}`);
-          } else {
-            alert(`Сессия ${sessionId} не существует или больше не активна`);
-          }
-        }).catch(error => {
-          console.error("Ошибка при присоединении к сессии:", error);
-          alert("Не удалось присоединиться к сессии. Проверьте ID сессии и подключение к интернету.");
-        });
-      }
-      
-      // Настройка отслеживания курсоров
-      function setupCursorTracking() {
-        if (!isCollaborationActive || !firebaseDB || !currentSessionId) return;
-        
-        // Отслеживаем изменения курсоров других пользователей
-        firebaseDB.ref('sessions/' + currentSessionId + '/cursors').on('value', snapshot => {
-          if (!snapshot.exists()) return;
-          
-          // Удаляем все существующие удаленные курсоры
-          document.querySelectorAll('.remote-cursor, .remote-selection').forEach(el => el.remove());
-          
-          // Создаем новые курсоры и выделения
-          const cursors = snapshot.val();
-          for (const remoteUserId in cursors) {
-            // Пропускаем свой курсор
-            if (remoteUserId === userId) continue;
-            
-            const cursorData = cursors[remoteUserId];
-            
-            // Создаем индикатор курсора
-            if (cursorData.position) {
-              createRemoteCursor(remoteUserId, cursorData.position, cursorData.user);
-            }
-            
-            // Создаем индикатор выделения
-            if (cursorData.selection) {
-              createRemoteSelection(remoteUserId, cursorData.selection, cursorData.user);
-            }
-          }
-        });
-      }
-      
-      // Создание индикатора удаленного курсора
-      function createRemoteCursor(userId, position, userData) {
-        if (!position) return;
-        
-        const cursorPos = editor.posFromIndex(position);
-        const cursorCoords = editor.cursorCoords(cursorPos);
-        
-        const cursorElement = document.createElement('div');
-        cursorElement.className = 'remote-cursor';
-        cursorElement.id = `cursor-${userId}`;
-        cursorElement.style.backgroundColor = userData.color || '#f39c12';
-        cursorElement.dataset.name = userData.name || 'Гость';
-        
-        cursorElement.style.top = `${cursorCoords.top}px`;
-        cursorElement.style.left = `${cursorCoords.left}px`;
-        
-        document.querySelector('.CodeMirror').appendChild(cursorElement);
-      }
-      
-      // Создание индикатора удаленного выделения
-      function createRemoteSelection(userId, selection, userData) {
-        if (!selection || !selection.from || !selection.to) return;
-        
-        const from = editor.posFromIndex(selection.from);
-        const to = editor.posFromIndex(selection.to);
-        
-        const selectionMarker = editor.markText(from, to, {
-          css: `background-color: ${userData.color || '#f39c12'}33`,
-          className: 'remote-selection',
-          title: `${userData.name || 'Гость'} выделил этот текст`
-        });
-      }
-      
-      // Обновление позиции курсора
-      function updateCursorPosition() {
-        if (!isCollaborationActive || !firebaseDB || !currentSessionId || !userId) return;
-        
-        const cursor = editor.getCursor();
-        const selection = editor.getSelection();
-        const cursorIndex = editor.indexFromPos(cursor);
-        
-        let selectionData = null;
-        if (selection && selection.length > 0) {
-          const ranges = editor.listSelections();
-          if (ranges.length > 0) {
-            const range = ranges[0];
-            selectionData = {
-              from: editor.indexFromPos(range.anchor),
-              to: editor.indexFromPos(range.head)
-            };
-          }
-        }
-        
-        // Проверяем, изменилась ли позиция с последнего обновления
-        const currentPosition = JSON.stringify({ cursor: cursorIndex, selection: selectionData });
-        if (lastCursorPosition === currentPosition) return;
-        
-        lastCursorPosition = currentPosition;
-        
-        // Обновляем информацию о курсоре в Firebase
-        firebaseDB.ref('sessions/' + currentSessionId + '/cursors/' + userId).set({
-          position: cursorIndex,
-          selection: selectionData,
-          timestamp: firebase.database.ServerValue.TIMESTAMP,
-          user: {
-            name: userName,
-            color: userColor
-          }
-        });
-      }
-      
-      // Выход из сессии совместной работы
-      function leaveSession() {
-        if (!isCollaborationActive || !firebaseDB || !currentSessionId || !userId) return;
-        
-        // Обновляем статус в Firebase
-        firebaseDB.ref('sessions/' + currentSessionId + '/users/' + userId).update({
-          online: false,
-          lastActive: firebase.database.ServerValue.TIMESTAMP
-        });
-        
-        // Удаляем информацию о курсоре
-        firebaseDB.ref('sessions/' + currentSessionId + '/cursors/' + userId).remove();
-        
-        // Отключаем провайдеры Yjs
-        if (provider) {
-          provider.disconnect();
-          provider = null;
-        }
-        
-        // Сбрасываем переменные сессии
-        currentSessionId = null;
-        isCollaborationActive = false;
+        // Устанавливаем текущую сессию
+        currentSessionId = sessionId;
         
         // Обновляем интерфейс
-        document.querySelector('.collaboration-status').classList.remove('active');
-        document.querySelector('.collaboration-status').classList.add('inactive');
-        document.getElementById('collaboration-text').textContent = "Офлайн режим";
-        document.getElementById('session-info').style.display = 'none';
+        document.getElementById('session-id').textContent = sessionId;
+        document.getElementById('session-info').style.display = 'flex';
         
-        // Уведомляем пользователя
-        alert("Вы вышли из сессии совместной работы");
+        // Активируем режим совместной работы
+        isCollaborationActive = true;
+        
+        // Симуляция добавления пользователей
+        const userName = document.getElementById('user-name').value || 'Гость';
+        document.getElementById('active-users').innerHTML = `
+          <div style="display: flex; align-items: center; margin-bottom: 5px;">
+            <span style="width: 20px; height: 20px; border-radius: 50%; background-color: #2ecc71; color: white; text-align: center; line-height: 20px; margin-right: 8px;">А</span>
+            <span>Администратор (создатель сессии)</span>
+          </div>
+          <div style="display: flex; align-items: center;">
+            <span style="width: 20px; height: 20px; border-radius: 50%; background-color: #3498db; color: white; text-align: center; line-height: 20px; margin-right: 8px;">${userName.charAt(0)}</span>
+            <span>Вы (${userName})</span>
+          </div>
+        `;
+        
+        // Закрываем модальное окно
+        document.getElementById('collab-modal').style.display = 'none';
+        
+        // В демо - просто показываем сообщение
+        alert(`Присоединились к сессии: ${sessionId}`);
+        
+        return true;
       }
       
       // Настройка слушателей для совместной работы
       function setupCollaboration() {
         // Кнопка для открытия модального окна совместной работы
         document.getElementById('toggle-collab-btn').addEventListener('click', function() {
-          // Если уже в сессии, предлагаем выйти
-          if (isCollaborationActive) {
-            if (confirm("Вы уже в сессии совместной работы. Хотите выйти из нее?")) {
-              leaveSession();
-            }
-            return;
-          }
-          
           document.getElementById('collab-modal').style.display = 'block';
         });
         
@@ -1997,34 +1525,6 @@ window.addEventListener('load', function() {
             console.error('Не удалось скопировать ID: ', err);
             alert("Не удалось скопировать ID. Попробуйте выделить и скопировать вручную.");
           });
-        });
-        
-        // Проверка URL параметров при загрузке для автоматического присоединения к сессии
-        window.addEventListener('load', function() {
-          const urlParams = new URLSearchParams(window.location.search);
-          const sessionParam = urlParams.get('session');
-          
-          if (sessionParam) {
-            // Отображаем модальное окно для ввода имени
-            document.getElementById('collab-modal').style.display = 'block';
-            document.getElementById('join-session').value = sessionParam;
-            
-            // Фокусируемся на поле ввода имени
-            document.getElementById('user-name').focus();
-            
-            // Меняем надпись для пользователя
-            const joinText = document.querySelector('#collab-modal .form-group:nth-child(2) p');
-            if (joinText) {
-              joinText.innerHTML = '<strong>Обнаружена ссылка на сессию!</strong> Введите ваше имя и нажмите "Присоединиться"';
-            }
-          }
-        });
-        
-        // Обработка событий до выгрузки страницы
-        window.addEventListener('beforeunload', function() {
-          if (isCollaborationActive) {
-            leaveSession();
-          }
         });
       }
       
@@ -2333,11 +1833,6 @@ window.addEventListener('load', function() {
         macroList.innerHTML = '';
         
         // Создаем объединенный список макросов для отображения
-        const displayMacros = {};
-
-
-
-// Создаем объединенный список макросов для отображения
         const displayMacros = {};
         
         for (const category in macrosData) {
@@ -2732,15 +2227,6 @@ window.addEventListener('load', function() {
         
         // Компилируем при первой загрузке
         setTimeout(compileLatex, 500);
-        
-        // Принудительное обновление редактора и компиляция (для исправления проблем отображения)
-        setTimeout(function() {
-          if (editor) {
-            console.log("Принудительное обновление редактора");
-            editor.refresh();
-            compileLatex();
-          }
-        }, 1000);
       }
       
       // Скачивание PDF
@@ -2750,20 +2236,6 @@ window.addEventListener('load', function() {
       
       // Инициализация редактора при загрузке
       initializeEditor();
-      
-      // Добавляем код для исправления проблем отображения
-      window.addEventListener('resize', function() {
-        if (editor) {
-          editor.refresh();
-        }
-      });
-      
-      // Проверка работы библиотек и исправление ошибок
-      console.log("Проверка загрузки библиотек:");
-      console.log("- CodeMirror:", typeof CodeMirror !== 'undefined');
-      console.log("- MathJax:", typeof MathJax !== 'undefined');
-      console.log("- Firebase:", typeof firebase !== 'undefined');
-      console.log("- Yjs:", typeof Y !== 'undefined');
     });
   </script>
 </body>
