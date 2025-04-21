@@ -290,6 +290,109 @@
       font-family: monospace;
     }
     
+    /* Стили для файлового менеджера */
+    .file-list {
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      max-height: 200px;
+      overflow-y: auto;
+      margin-top: 10px;
+    }
+    
+    .file-item {
+      padding: 8px;
+      border-bottom: 1px solid #ddd;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+    }
+    
+    .file-item:last-child {
+      border-bottom: none;
+    }
+    
+    .file-item:hover {
+      background-color: #f0f0f0;
+    }
+    
+    .file-item.active {
+      background-color: #e3f2fd;
+    }
+    
+    .file-actions {
+      display: flex;
+      gap: 5px;
+    }
+    
+    /* Настройки */
+    .settings-group {
+      margin-bottom: 15px;
+    }
+    
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 40px;
+      height: 20px;
+      margin-right: 10px;
+    }
+    
+    .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+    
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: #ccc;
+      transition: .4s;
+      border-radius: 20px;
+    }
+    
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 16px;
+      width: 16px;
+      left: 2px;
+      bottom: 2px;
+      background-color: white;
+      transition: .4s;
+      border-radius: 50%;
+    }
+    
+    input:checked + .slider {
+      background-color: #2196F3;
+    }
+    
+    input:checked + .slider:before {
+      transform: translateX(20px);
+    }
+    
+    .settings-row {
+      display: flex;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    
+    .autosave-indicator {
+      margin-left: 10px;
+      font-size: 12px;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+    
+    .autosave-indicator.show {
+      opacity: 1;
+    }
+    
     /* Адаптивный дизайн */
     @media (max-width: 768px) {
       main {
@@ -312,11 +415,12 @@
   <header>
     <div style="display: flex; align-items: center;">
       <h1>LaTeX Онлайн-редактор</h1>
-      <span id="status-indicator" style="margin-left: 10px; font-size: 12px;">Готово</span>
+      <span id="autosave-indicator" class="autosave-indicator">Автосохранение...</span>
     </div>
     <div class="header-buttons">
       <button id="compile-btn">Компилировать</button>
       <button id="settings-btn">Настройки</button>
+      <button id="files-btn">Файлы</button>
       <button id="smart-macros-btn">Умные макросы</button>
       <button id="help-btn">Справка</button>
     </div>
@@ -382,8 +486,9 @@ F(x) = \int_{a}^{b} f(x) \, dx
         <div>
           <span id="status">Готово</span>
         </div>
-        <div>
-          <span id="cursor-position">Строка: 1, Столбец: 1</span>
+        <div style="display: flex; align-items: center;">
+          <span id="current-file">document1.tex</span>
+          <span id="cursor-position" style="margin-left: 15px;">Строка: 1, Столбец: 1</span>
         </div>
       </div>
     </div>
@@ -436,12 +541,109 @@ F(x) = \int_{a}^{b} f(x) \, dx
       </div>
     </div>
   </div>
+  
+  <!-- Модальное окно для настроек -->
+  <div id="settings-modal" class="modal">
+    <div class="modal-content">
+      <span class="close">&times;</span>
+      <h2>Настройки</h2>
+      
+      <div class="settings-group">
+        <h3>Компиляция и сохранение</h3>
+        
+        <div class="settings-row">
+          <label class="switch">
+            <input type="checkbox" id="autocompile-toggle">
+            <span class="slider"></span>
+          </label>
+          <label for="autocompile-toggle">Автоматическая компиляция</label>
+        </div>
+        
+        <div class="settings-row">
+          <label for="autocompile-delay">Задержка автокомпиляции:</label>
+          <input type="number" id="autocompile-delay" min="1" max="10" value="2" style="width: 60px; margin-left: 10px;"> сек.
+        </div>
+        
+        <div class="settings-row">
+          <label class="switch">
+            <input type="checkbox" id="autosave-toggle" checked>
+            <span class="slider"></span>
+          </label>
+          <label for="autosave-toggle">Автосохранение</label>
+        </div>
+        
+        <div class="settings-row">
+          <label for="autosave-interval">Интервал автосохранения:</label>
+          <input type="number" id="autosave-interval" min="1" max="30" value="3" style="width: 60px; margin-left: 10px;"> сек.
+        </div>
+      </div>
+      
+      <div class="settings-group">
+        <h3>Интерфейс</h3>
+        
+        <div class="settings-row">
+          <label for="font-size">Размер шрифта в редакторе:</label>
+          <select id="font-size" style="width: 100px; margin-left: 10px;">
+            <option value="12">12px</option>
+            <option value="14" selected>14px</option>
+            <option value="16">16px</option>
+            <option value="18">18px</option>
+          </select>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Модальное окно для файлов -->
+  <div id="files-modal" class="modal">
+    <div class="modal-content">
+      <span class="close">&times;</span>
+      <h2>Управление файлами</h2>
+      
+      <div class="form-group">
+        <label for="new-file-name">Новый файл:</label>
+        <div style="display: flex; gap: 10px;">
+          <input type="text" id="new-file-name" placeholder="Имя файла (без расширения)">
+          <button id="create-file-btn">Создать</button>
+        </div>
+      </div>
+      
+      <h3 style="margin-top: 15px;">Ваши файлы</h3>
+      <div id="file-list" class="file-list">
+        <!-- Здесь будет список файлов -->
+      </div>
+    </div>
+  </div>
 
   <script>
     document.addEventListener('DOMContentLoaded', function() {
       // Глобальные переменные
       let editor;
       let lastSavedContent = '';
+      let currentFileName = 'document1.tex';
+      let autoSaveTimer = null;
+      let autoCompileTimer = null;
+      let isTyping = false;
+      let lastTypingTime = 0;
+      
+      // Настройки
+      let settings = {
+        autoCompileEnabled: false,
+        autoSaveEnabled: true,
+        autoCompileDelay: 2, // в секундах
+        autoSaveInterval: 3, // в секундах
+        fontSize: 14 // в пикселях
+      };
+      
+      // Загрузка настроек из localStorage
+      if (localStorage.getItem('latex-editor-settings')) {
+        try {
+          const savedSettings = JSON.parse(localStorage.getItem('latex-editor-settings'));
+          settings = { ...settings, ...savedSettings };
+        } catch (e) {
+          console.error('Ошибка при загрузке настроек:', e);
+        }
+      }
       
       // Умные макросы (стандартный макрос для дробей)
       let smartMacros = [
@@ -528,11 +730,63 @@ F(x) = \int_{a}^{b} f(x) \, dx
         }
       });
       
+      // Применяем размер шрифта из настроек
+      document.querySelector('.CodeMirror').style.fontSize = settings.fontSize + 'px';
+      
       // Обновление позиции курсора
       editor.on("cursorActivity", function() {
         const cursor = editor.getCursor();
         document.getElementById('cursor-position').textContent = `Строка: ${cursor.line + 1}, Столбец: ${cursor.ch + 1}`;
       });
+      
+      // Событие изменения содержимого редактора
+      editor.on("change", function() {
+        // Отметим, что пользователь печатает
+        isTyping = true;
+        lastTypingTime = Date.now();
+        
+        // Отменяем предыдущие таймеры
+        if (autoSaveTimer) clearTimeout(autoSaveTimer);
+        if (autoCompileTimer) clearTimeout(autoCompileTimer);
+        
+        // Создаем новый таймер для автосохранения
+        if (settings.autoSaveEnabled) {
+          autoSaveTimer = setTimeout(function() {
+            autoSave();
+          }, settings.autoSaveInterval * 1000);
+        }
+        
+        // Создаем новый таймер для автокомпиляции
+        if (settings.autoCompileEnabled) {
+          autoCompileTimer = setTimeout(function() {
+            compileLatex();
+          }, settings.autoCompileDelay * 1000);
+        }
+      });
+      
+      // Функция автосохранения
+      function autoSave() {
+        if (!isTyping) return;
+        
+        const content = editor.getValue();
+        if (content === lastSavedContent) return;
+        
+        // Сохраняем в localStorage
+        localStorage.setItem('latex-document-' + currentFileName, content);
+        lastSavedContent = content;
+        
+        // Показываем индикатор автосохранения
+        const indicator = document.getElementById('autosave-indicator');
+        indicator.classList.add('show');
+        indicator.textContent = 'Автосохранение...';
+        
+        // Скрываем индикатор через 2 секунды
+        setTimeout(function() {
+          indicator.classList.remove('show');
+        }, 2000);
+        
+        isTyping = false;
+      }
       
       // Кнопка компиляции
       document.getElementById('compile-btn').addEventListener('click', compileLatex);
@@ -540,9 +794,6 @@ F(x) = \int_{a}^{b} f(x) \, dx
       // Функция компиляции LaTeX
       function compileLatex() {
         const latexCode = editor.getValue();
-        
-        // Сохраняем контент
-        lastSavedContent = latexCode;
         
         // Показываем индикатор загрузки
         const loadingOverlay = document.querySelector('.loading-overlay');
@@ -670,7 +921,7 @@ F(x) = \int_{a}^{b} f(x) \, dx
             
             // Обработка уравнений
             content = content.replace(/\\begin\{equation\}([\s\S]*?)\\end\{equation\}/g, 
-              '<div class="pdf-equation">$$1</div>');
+              '<div class="pdf-equation">$1</div>');
             
             // Обработка встроенных формул
             content = content.replace(/\$(.*?)\$/g, '\\($1\\)');
@@ -699,6 +950,239 @@ F(x) = \int_{a}^{b} f(x) \, dx
           });
         }
       }
+      
+      // ===== ФАЙЛОВЫЕ ОПЕРАЦИИ =====
+      
+      // Загрузка списка файлов
+      function loadFilesList() {
+        const fileList = document.getElementById('file-list');
+        fileList.innerHTML = '';
+        
+        // Получаем список файлов из localStorage
+        const fileKeys = Object.keys(localStorage).filter(key => key.startsWith('latex-document-'));
+        
+        // Если нет файлов, создаем первый файл
+        if (fileKeys.length === 0) {
+          localStorage.setItem('latex-document-' + currentFileName, editor.getValue());
+          fileKeys.push('latex-document-' + currentFileName);
+        }
+        
+        // Отображаем файлы
+        fileKeys.forEach(key => {
+          const fileName = key.replace('latex-document-', '');
+          const fileItem = document.createElement('div');
+          fileItem.className = 'file-item';
+          
+          if (fileName === currentFileName) {
+            fileItem.classList.add('active');
+          }
+          
+          fileItem.innerHTML = `
+            <div>${fileName}</div>
+            <div class="file-actions">
+              <button class="rename-file" data-name="${fileName}">Переименовать</button>
+              <button class="delete-file" data-name="${fileName}">Удалить</button>
+            </div>
+          `;
+          
+          // При клике на элемент загружаем файл
+          fileItem.addEventListener('click', function(e) {
+            // Игнорируем клики на кнопках
+            if (e.target.tagName === 'BUTTON') return;
+            
+            if (fileName !== currentFileName) {
+              loadFile(fileName);
+            }
+          });
+          
+          fileList.appendChild(fileItem);
+        });
+        
+        // Добавляем обработчики для кнопок
+        document.querySelectorAll('.rename-file').forEach(btn => {
+          btn.addEventListener('click', function() {
+            const oldName = this.getAttribute('data-name');
+            const newName = prompt('Введите новое имя файла:', oldName);
+            
+            if (newName && newName.trim() && newName !== oldName) {
+              renameFile(oldName, newName);
+            }
+          });
+        });
+        
+        document.querySelectorAll('.delete-file').forEach(btn => {
+          btn.addEventListener('click', function() {
+            const fileName = this.getAttribute('data-name');
+            
+            if (confirm(`Вы уверены, что хотите удалить файл "${fileName}"?`)) {
+              deleteFile(fileName);
+            }
+          });
+        });
+      }
+      
+      // Загрузка файла
+      function loadFile(fileName) {
+        // Сохраняем текущий файл перед переключением
+        if (currentFileName) {
+          localStorage.setItem('latex-document-' + currentFileName, editor.getValue());
+        }
+        
+        // Загружаем выбранный файл
+        const fileContent = localStorage.getItem('latex-document-' + fileName);
+        if (fileContent) {
+          editor.setValue(fileContent);
+          currentFileName = fileName;
+          document.getElementById('current-file').textContent = fileName;
+          
+          // Обновляем lastSavedContent для правильной работы автосохранения
+          lastSavedContent = fileContent;
+          
+          // Закрываем модальное окно
+          document.getElementById('files-modal').style.display = 'none';
+          
+          // Компилируем загруженный файл
+          compileLatex();
+        }
+      }
+      
+      // Создание нового файла
+      function createNewFile(fileName) {
+        if (!fileName.trim()) {
+          alert('Имя файла не может быть пустым');
+          return;
+        }
+        
+        // Добавляем расширение .tex, если его нет
+        if (!fileName.endsWith('.tex')) {
+          fileName += '.tex';
+        }
+        
+        // Проверяем существование файла
+        if (localStorage.getItem('latex-document-' + fileName)) {
+          alert(`Файл с именем "${fileName}" уже существует!`);
+          return;
+        }
+        
+        // Сохраняем текущий файл
+        localStorage.setItem('latex-document-' + currentFileName, editor.getValue());
+        
+        // Создаем шаблон для нового файла
+        const templateContent = `\\documentclass{article}
+\\usepackage[utf8]{inputenc}
+\\usepackage[T2A]{fontenc}
+\\usepackage[russian]{babel}
+\\usepackage{amsmath}
+\\usepackage{amsfonts}
+\\usepackage{amssymb}
+\\usepackage{graphicx}
+\\usepackage{hyperref}
+
+\\title{${fileName.replace('.tex', '')}}
+\\author{Автор}
+\\date{\\today}
+
+\\begin{document}
+
+\\maketitle
+
+\\section{Введение}
+Содержимое нового файла.
+
+\\end{document}`;
+        
+        // Сохраняем новый файл
+        localStorage.setItem('latex-document-' + fileName, templateContent);
+        
+        // Загружаем новый файл в редактор
+        loadFile(fileName);
+        
+        // Обновляем список файлов
+        loadFilesList();
+      }
+      
+      // Переименование файла
+      function renameFile(oldName, newName) {
+        // Добавляем расширение .tex, если его нет
+        if (!newName.endsWith('.tex')) {
+          newName += '.tex';
+        }
+        
+        // Проверяем существование файла с новым именем
+        if (localStorage.getItem('latex-document-' + newName)) {
+          alert(`Файл с именем "${newName}" уже существует!`);
+          return;
+        }
+        
+        // Копируем содержимое
+        const content = localStorage.getItem('latex-document-' + oldName);
+        localStorage.setItem('latex-document-' + newName, content);
+        
+        // Удаляем старый файл
+        localStorage.removeItem('latex-document-' + oldName);
+        
+        // Если переименовываем текущий файл, обновляем currentFileName
+        if (oldName === currentFileName) {
+          currentFileName = newName;
+          document.getElementById('current-file').textContent = newName;
+        }
+        
+        // Обновляем список файлов
+        loadFilesList();
+      }
+      
+      // Удаление файла
+      function deleteFile(fileName) {
+        localStorage.removeItem('latex-document-' + fileName);
+        
+        // Если удаляем текущий файл, загружаем другой
+        if (fileName === currentFileName) {
+          const fileKeys = Object.keys(localStorage).filter(key => key.startsWith('latex-document-'));
+          
+          if (fileKeys.length > 0) {
+            // Загружаем первый оставшийся файл
+            loadFile(fileKeys[0].replace('latex-document-', ''));
+          } else {
+            // Если файлов не осталось, создаем новый
+            const newFileName = 'document1.tex';
+            currentFileName = newFileName;
+            document.getElementById('current-file').textContent = newFileName;
+            
+            // Сбрасываем редактор к шаблону
+            editor.setValue(`\\documentclass{article}
+\\usepackage[utf8]{inputenc}
+\\usepackage[T2A]{fontenc}
+\\usepackage[russian]{babel}
+\\usepackage{amsmath}
+\\usepackage{amsfonts}
+\\usepackage{amssymb}
+\\usepackage{graphicx}
+\\usepackage{hyperref}
+
+\\title{Новый документ}
+\\author{Автор}
+\\date{\\today}
+
+\\begin{document}
+
+\\maketitle
+
+\\section{Введение}
+Содержимое нового документа.
+
+\\end{document}`);
+            
+            // Сохраняем новый файл
+            localStorage.setItem('latex-document-' + newFileName, editor.getValue());
+            lastSavedContent = editor.getValue();
+          }
+        }
+        
+        // Обновляем список файлов
+        loadFilesList();
+      }
+      
+      // ===== УМНЫЕ МАКРОСЫ =====
       
       // Функция обновления списка умных макросов
       function updateSmartMacrosList() {
@@ -753,7 +1237,7 @@ F(x) = \int_{a}^{b} f(x) \, dx
               
               if (match) {
                 for (let i = 1; i < match.length; i++) {
-                  const placeholder = `$${i}`;
+                  const placeholder = `${i}`;
                   exampleAfter = exampleAfter.replace(new RegExp('\\' + placeholder, 'g'), match[i]);
                 }
               }
@@ -770,20 +1254,52 @@ F(x) = \int_{a}^{b} f(x) \, dx
         }
       }
       
-      // Настройка обработчиков событий для модального окна умных макросов
+      // ===== НАСТРОЙКИ =====
+      
+      // Функция применения настроек
+      function applySettings() {
+        // Применяем размер шрифта
+        document.querySelector('.CodeMirror').style.fontSize = settings.fontSize + 'px';
+        
+        // Обновляем элементы формы
+        document.getElementById('autosave-toggle').checked = settings.autoSaveEnabled;
+        document.getElementById('autocompile-toggle').checked = settings.autoCompileEnabled;
+        document.getElementById('autosave-interval').value = settings.autoSaveInterval;
+        document.getElementById('autocompile-delay').value = settings.autoCompileDelay;
+        document.getElementById('font-size').value = settings.fontSize;
+      }
+      
+      // Функция сохранения настроек
+      function saveSettings() {
+        localStorage.setItem('latex-editor-settings', JSON.stringify(settings));
+      }
+      
+      // ===== ОБРАБОТЧИКИ СОБЫТИЙ =====
+      
+      // Настройка обработчиков для модальных окон
       document.getElementById('smart-macros-btn').addEventListener('click', function() {
         document.getElementById('smart-macros-modal').style.display = 'block';
         updateSmartMacrosList();
       });
       
-      // Закрытие модального окна
+      document.getElementById('settings-btn').addEventListener('click', function() {
+        document.getElementById('settings-modal').style.display = 'block';
+        applySettings();
+      });
+      
+      document.getElementById('files-btn').addEventListener('click', function() {
+        document.getElementById('files-modal').style.display = 'block';
+        loadFilesList();
+      });
+      
+      // Закрытие модальных окон
       document.querySelectorAll('.modal .close').forEach(function(closeBtn) {
         closeBtn.addEventListener('click', function() {
           this.closest('.modal').style.display = 'none';
         });
       });
       
-      // Закрытие модального окна при клике вне его
+      // Закрытие модальных окон при клике вне их
       window.addEventListener('click', function(event) {
         document.querySelectorAll('.modal').forEach(modal => {
           if (event.target === modal) {
@@ -833,6 +1349,50 @@ F(x) = \int_{a}^{b} f(x) \, dx
         // Обновляем предпросмотр
         document.getElementById('smart-macro-before').textContent = 'a1/b1';
         document.getElementById('smart-macro-after').textContent = '\\frac{a1}{b1}';
+      });
+      
+      // Обработчики для настроек
+      document.getElementById('autosave-toggle').addEventListener('change', function() {
+        settings.autoSaveEnabled = this.checked;
+        saveSettings();
+      });
+      
+      document.getElementById('autocompile-toggle').addEventListener('change', function() {
+        settings.autoCompileEnabled = this.checked;
+        saveSettings();
+      });
+      
+      document.getElementById('autosave-interval').addEventListener('change', function() {
+        const value = parseInt(this.value);
+        if (value >= 1 && value <= 30) {
+          settings.autoSaveInterval = value;
+          saveSettings();
+        }
+      });
+      
+      document.getElementById('autocompile-delay').addEventListener('change', function() {
+        const value = parseInt(this.value);
+        if (value >= 1 && value <= 10) {
+          settings.autoCompileDelay = value;
+          saveSettings();
+        }
+      });
+      
+      document.getElementById('font-size').addEventListener('change', function() {
+        settings.fontSize = parseInt(this.value);
+        document.querySelector('.CodeMirror').style.fontSize = settings.fontSize + 'px';
+        saveSettings();
+      });
+      
+      // Создание нового файла
+      document.getElementById('create-file-btn').addEventListener('click', function() {
+        const fileName = document.getElementById('new-file-name').value.trim();
+        if (fileName) {
+          createNewFile(fileName);
+          document.getElementById('new-file-name').value = '';
+        } else {
+          alert('Введите имя файла!');
+        }
       });
       
       // Вставка шаблонов из кнопок панели инструментов
@@ -893,16 +1453,29 @@ F(x) = \int_{a}^{b} f(x) \, dx
           '- Используйте кнопки панели инструментов для вставки типовых элементов\n' +
           '- Нажмите Tab после ввода выражения вида a/b для автоматического преобразования в дробь\n' +
           '- Создавайте собственные умные макросы через меню "Умные макросы"\n' +
+          '- Управляйте файлами через меню "Файлы"\n' +
+          '- Настраивайте автокомпиляцию и автосохранение в настройках\n' +
           '- Нажмите Ctrl+Enter для компиляции документа');
       });
       
-      // Кнопка "Настройки" (заглушка)
-      document.getElementById('settings-btn').addEventListener('click', function() {
-        alert('Настройки редактора:\n\n' + 
-          '- Автосохранение: Включено\n' +
-          '- Тема редактора: Светлая\n' +
-          '- Размер шрифта: 14px');
-      });
+      // Загружаем файл при запуске
+      // Проверяем, есть ли сохраненные файлы
+      const fileKeys = Object.keys(localStorage).filter(key => key.startsWith('latex-document-'));
+      if (fileKeys.length > 0) {
+        // Загружаем первый файл из списка
+        currentFileName = fileKeys[0].replace('latex-document-', '');
+        const savedDocument = localStorage.getItem(fileKeys[0]);
+        
+        if (savedDocument) {
+          editor.setValue(savedDocument);
+          lastSavedContent = savedDocument;
+          document.getElementById('current-file').textContent = currentFileName;
+        }
+      } else {
+        // Если нет сохраненных файлов, сохраняем текущий шаблон
+        localStorage.setItem('latex-document-' + currentFileName, editor.getValue());
+        lastSavedContent = editor.getValue();
+      }
       
       // Компилируем при первой загрузке
       setTimeout(compileLatex, 500);
