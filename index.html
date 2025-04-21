@@ -393,6 +393,109 @@
       opacity: 1;
     }
     
+    /* Новые стили для улучшенных умных макросов */
+    .macro-categories {
+      display: flex;
+      margin-bottom: 15px;
+      border-bottom: 1px solid #ddd;
+      overflow-x: auto;
+      padding-bottom: 5px;
+    }
+    
+    .macro-category {
+      padding: 5px 12px;
+      cursor: pointer;
+      border-radius: 4px;
+      margin-right: 5px;
+      background-color: #f5f5f5;
+      white-space: nowrap;
+    }
+    
+    .macro-category.active {
+      background-color: #3498db;
+      color: white;
+    }
+    
+    .macro-templates {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 10px;
+      margin-bottom: 15px;
+    }
+    
+    .macro-template {
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      padding: 10px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .macro-template:hover {
+      border-color: #3498db;
+      background-color: #f0f8ff;
+    }
+    
+    .macro-template.selected {
+      border-color: #3498db;
+      background-color: #e3f2fd;
+    }
+    
+    .macro-name {
+      font-weight: bold;
+      margin-bottom: 5px;
+    }
+    
+    .macro-description {
+      font-size: 12px;
+      color: #666;
+      margin-bottom: 5px;
+    }
+    
+    .macro-preview {
+      font-family: monospace;
+      background-color: #f8f9fa;
+      padding: 5px;
+      border-radius: 3px;
+      font-size: 12px;
+    }
+    
+    .macro-custom-form {
+      display: none;
+      margin-top: 15px;
+    }
+    
+    .current-macros-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 20px;
+      margin-bottom: 10px;
+    }
+    
+    .macro-tag {
+      display: inline-block;
+      padding: 3px 8px;
+      background-color: #e1f5fe;
+      border-radius: 15px;
+      font-size: 12px;
+      margin-right: 5px;
+      margin-bottom: 5px;
+      border: 1px solid #81d4fa;
+    }
+    
+    .macro-description-modal {
+      display: none;
+      position: absolute;
+      z-index: 300;
+      background-color: white;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      padding: 15px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      max-width: 300px;
+    }
+    
     /* Адаптивный дизайн */
     @media (max-width: 768px) {
       main {
@@ -407,6 +510,10 @@
       
       .modal-content {
         width: 90%;
+      }
+      
+      .macro-templates {
+        grid-template-columns: 1fr;
       }
     }
   </style>
@@ -507,37 +614,95 @@ F(x) = \int_{a}^{b} f(x) \, dx
     </div>
   </main>
   
-  <!-- Модальное окно для умных макросов -->
+  <!-- Улучшенное модальное окно для умных макросов -->
   <div id="smart-macros-modal" class="modal">
-    <div class="modal-content">
+    <div class="modal-content" style="max-width: 700px; width: 80%;">
       <span class="close">&times;</span>
       <h2>Умные макросы</h2>
       
       <p>Умные макросы автоматически преобразуют текстовые шаблоны в LaTeX команды при нажатии Tab.</p>
       
-      <div class="form-group">
-        <label for="smart-macro-pattern">Шаблон:</label>
-        <input type="text" id="smart-macro-pattern" placeholder="Например: ([^\\s/]+)/([^\\s/]+)">
-        <p style="font-size: 12px; color: #666;">Используйте регулярные выражения для определения шаблона.</p>
+      <!-- Категории макросов -->
+      <div class="macro-categories">
+        <div class="macro-category active" data-category="math">Математика</div>
+        <div class="macro-category" data-category="text">Текст</div>
+        <div class="macro-category" data-category="greek">Греческие символы</div>
+        <div class="macro-category" data-category="environment">Окружения</div>
+        <div class="macro-category" data-category="custom">Пользовательский</div>
       </div>
       
-      <div class="form-group">
-        <label for="smart-macro-template">Шаблон замены:</label>
-        <input type="text" id="smart-macro-template" placeholder="Например: \frac{$1}{$2}">
-        <p style="font-size: 12px; color: #666;">$1, $2, и т.д. будут заменены на соответствующие части шаблона.</p>
+      <!-- Шаблоны макросов -->
+      <div class="macro-templates" id="macro-templates">
+        <!-- Шаблоны будут добавлены через JavaScript -->
       </div>
       
-      <div class="smart-macro-preview">
-        <span class="smart-macro-preview-before" id="smart-macro-before">a1/b1</span>
-        <span class="smart-macro-preview-arrow">→</span>
-        <span class="smart-macro-preview-after" id="smart-macro-after">\frac{a1}{b1}</span>
+      <!-- Форма для настройки пользовательского макроса -->
+      <div class="macro-custom-form" id="macro-custom-form">
+        <div class="form-group">
+          <label for="smart-macro-pattern">Шаблон:</label>
+          <input type="text" id="smart-macro-pattern" placeholder="Например: ([^\\s/]+)/([^\\s/]+)">
+          <p style="font-size: 12px; color: #666;">Используйте регулярные выражения для определения шаблона.</p>
+        </div>
+        
+        <div class="form-group">
+          <label for="smart-macro-template">Шаблон замены:</label>
+          <input type="text" id="smart-macro-template" placeholder="Например: \frac{$1}{$2}">
+          <p style="font-size: 12px; color: #666;">$1, $2, и т.д. будут заменены на соответствующие части шаблона.</p>
+        </div>
+        
+        <div class="form-group">
+          <label for="smart-macro-description">Описание (опционально):</label>
+          <input type="text" id="smart-macro-description" placeholder="Например: Преобразование в дробь">
+        </div>
+        
+        <div class="form-group">
+          <label for="smart-macro-category">Категория:</label>
+          <select id="smart-macro-category">
+            <option value="math">Математика</option>
+            <option value="text">Текст</option>
+            <option value="greek">Греческие символы</option>
+            <option value="environment">Окружения</option>
+            <option value="custom" selected>Пользовательский</option>
+          </select>
+        </div>
+        
+        <div class="smart-macro-preview">
+          <span class="smart-macro-preview-before" id="smart-macro-before">a1/b1</span>
+          <span class="smart-macro-preview-arrow">→</span>
+          <span class="smart-macro-preview-after" id="smart-macro-after">\frac{a1}{b1}</span>
+        </div>
       </div>
       
-      <button id="add-smart-macro-btn" style="margin-top: 15px;">Добавить умный макрос</button>
+      <button id="add-smart-macro-btn" style="margin-top: 15px; display: none;">Добавить умный макрос</button>
       
-      <h3 style="margin-top: 20px;">Существующие умные макросы</h3>
+      <!-- Заголовок для списка существующих макросов -->
+      <div class="current-macros-header">
+        <h3>Ваши умные макросы</h3>
+        <div>
+          <button id="export-macros-btn" title="Экспорт макросов">Экспорт</button>
+          <button id="import-macros-btn" title="Импорт макросов">Импорт</button>
+        </div>
+      </div>
+      
+      <!-- Теги с активными макросами -->
+      <div id="active-macros-tags" style="margin-bottom: 15px;">
+        <!-- Теги будут добавлены через JavaScript -->
+      </div>
+      
+      <!-- Список существующих макросов -->
       <div id="smart-macros-list" style="border: 1px solid #ddd; border-radius: 4px; max-height: 200px; overflow-y: auto; margin-top: 10px;">
         <!-- Здесь будет список умных макросов -->
+      </div>
+      
+      <!-- Модальное окно для описания макроса -->
+      <div id="macro-description-modal" class="macro-description-modal">
+        <h4 id="modal-macro-name"></h4>
+        <p id="modal-macro-description"></p>
+        <div style="margin-top: 10px;">
+          <div style="font-weight: bold; margin-bottom: 5px;">Пример использования:</div>
+          <div style="font-family: monospace; background-color: #f5f5f5; padding: 5px; border-radius: 3px; margin-bottom: 10px;" id="modal-macro-example"></div>
+          <div id="modal-macro-result" style="font-family: monospace; color: #2c3e50;"></div>
+        </div>
       </div>
     </div>
   </div>
@@ -625,6 +790,7 @@ F(x) = \int_{a}^{b} f(x) \, dx
       let autoCompileTimer = null;
       let isTyping = false;
       let lastTypingTime = 0;
+      let selectedMacroTemplate = null;
       
       // Настройки
       let settings = {
@@ -645,29 +811,428 @@ F(x) = \int_{a}^{b} f(x) \, dx
         }
       }
       
-      // Умные макросы (стандартный макрос для дробей)
-      let smartMacros = [
+      // Предустановленные умные макросы
+      const predefinedMacros = [
+        // Математические макросы
         {
           pattern: '([^\\s/]+)/([^\\s/]+)',
-          template: '\\frac{$1}{$2}'
+          template: '\\frac{$1}{$2}',
+          category: 'math',
+          name: 'Дробь',
+          description: 'Создает дробь из выражения вида a/b',
+          example: 'x+1/y-2'
+        },
+        {
+          pattern: 'sqrt\\(([^)]+)\\)',
+          template: '\\sqrt{$1}',
+          category: 'math',
+          name: 'Корень',
+          description: 'Создает корень из выражения вида sqrt(x)',
+          example: 'sqrt(x+1)'
+        },
+        {
+          pattern: 'int\\(([^,]+),([^)]+)\\)',
+          template: '\\int_{$2}^{} $1 \\,d',
+          category: 'math',
+          name: 'Интеграл',
+          description: 'Создает интеграл из выражения вида int(функция, переменная)',
+          example: 'int(x^2, x)'
+        },
+        {
+          pattern: 'sum\\(([^,]+),([^,]+),([^)]+)\\)',
+          template: '\\sum_{$2}^{$3} $1',
+          category: 'math',
+          name: 'Сумма',
+          description: 'Создает сумму из выражения вида sum(выражение, от, до)',
+          example: 'sum(i^2, i=1, n)'
+        },
+        {
+          pattern: 'lim\\(([^,]+),([^)]+)\\)',
+          template: '\\lim_{$2} $1',
+          category: 'math',
+          name: 'Предел',
+          description: 'Создает предел из выражения вида lim(выражение, стремление)',
+          example: 'lim(1/x, x->0)'
+        },
+        {
+          pattern: 'matrix\\(([0-9]+),([0-9]+)\\)',
+          template: '\\begin{pmatrix}\n' + 
+                    Array(parseInt('$1')).fill(Array(parseInt('$2')).fill('').join(' & ')).join(' \\\\\n') + 
+                    '\n\\end{pmatrix}',
+          category: 'math',
+          name: 'Матрица',
+          description: 'Создает матрицу из выражения вида matrix(строки, столбцы)',
+          example: 'matrix(2,3)'
+        },
+        {
+          pattern: '([^\\s\\^]+)\\^([^\\s]+)',
+          template: '{$1}^{$2}',
+          category: 'math',
+          name: 'Степень',
+          description: 'Создает выражение в степени из формы a^b',
+          example: 'x^{n+1}'
+        },
+        {
+          pattern: '([^\\s_]+)_([^\\s]+)',
+          template: '{$1}_{$2}',
+          category: 'math',
+          name: 'Индекс',
+          description: 'Создает выражение с индексом из формы a_i',
+          example: 'x_{i+1}'
+        },
+        
+        // Греческие символы
+        {
+          pattern: ':alpha',
+          template: '\\alpha',
+          category: 'greek',
+          name: 'Альфа',
+          description: 'Греческая буква альфа',
+          example: ':alpha'
+        },
+        {
+          pattern: ':beta',
+          template: '\\beta',
+          category: 'greek',
+          name: 'Бета',
+          description: 'Греческая буква бета',
+          example: ':beta'
+        },
+        {
+          pattern: ':gamma',
+          template: '\\gamma',
+          category: 'greek',
+          name: 'Гамма',
+          description: 'Греческая буква гамма',
+          example: ':gamma'
+        },
+        {
+          pattern: ':delta',
+          template: '\\delta',
+          category: 'greek',
+          name: 'Дельта',
+          description: 'Греческая буква дельта',
+          example: ':delta'
+        },
+        {
+          pattern: ':epsilon',
+          template: '\\epsilon',
+          category: 'greek',
+          name: 'Эпсилон',
+          description: 'Греческая буква эпсилон',
+          example: ':epsilon'
+        },
+        {
+          pattern: ':zeta',
+          template: '\\zeta',
+          category: 'greek',
+          name: 'Зета',
+          description: 'Греческая буква зета',
+          example: ':zeta'
+        },
+        {
+          pattern: ':eta',
+          template: '\\eta',
+          category: 'greek',
+          name: 'Эта',
+          description: 'Греческая буква эта',
+          example: ':eta'
+        },
+        {
+          pattern: ':theta',
+          template: '\\theta',
+          category: 'greek',
+          name: 'Тета',
+          description: 'Греческая буква тета',
+          example: ':theta'
+        },
+        {
+          pattern: ':iota',
+          template: '\\iota',
+          category: 'greek',
+          name: 'Йота',
+          description: 'Греческая буква йота',
+          example: ':iota'
+        },
+        {
+          pattern: ':kappa',
+          template: '\\kappa',
+          category: 'greek',
+          name: 'Каппа',
+          description: 'Греческая буква каппа',
+          example: ':kappa'
+        },
+        {
+          pattern: ':lambda',
+          template: '\\lambda',
+          category: 'greek',
+          name: 'Лямбда',
+          description: 'Греческая буква лямбда',
+          example: ':lambda'
+        },
+        {
+          pattern: ':mu',
+          template: '\\mu',
+          category: 'greek',
+          name: 'Мю',
+          description: 'Греческая буква мю',
+          example: ':mu'
+        },
+        {
+          pattern: ':nu',
+          template: '\\nu',
+          category: 'greek',
+          name: 'Ню',
+          description: 'Греческая буква ню',
+          example: ':nu'
+        },
+        {
+          pattern: ':xi',
+          template: '\\xi',
+          category: 'greek',
+          name: 'Кси',
+          description: 'Греческая буква кси',
+          example: ':xi'
+        },
+        {
+          pattern: ':pi',
+          template: '\\pi',
+          category: 'greek',
+          name: 'Пи',
+          description: 'Греческая буква пи',
+          example: ':pi'
+        },
+        {
+          pattern: ':rho',
+          template: '\\rho',
+          category: 'greek',
+          name: 'Ро',
+          description: 'Греческая буква ро',
+          example: ':rho'
+        },
+        {
+          pattern: ':sigma',
+          template: '\\sigma',
+          category: 'greek',
+          name: 'Сигма',
+          description: 'Греческая буква сигма',
+          example: ':sigma'
+        },
+        {
+          pattern: ':tau',
+          template: '\\tau',
+          category: 'greek',
+          name: 'Тау',
+          description: 'Греческая буква тау',
+          example: ':tau'
+        },
+        {
+          pattern: ':upsilon',
+          template: '\\upsilon',
+          category: 'greek',
+          name: 'Ипсилон',
+          description: 'Греческая буква ипсилон',
+          example: ':upsilon'
+        },
+        {
+          pattern: ':phi',
+          template: '\\phi',
+          category: 'greek',
+          name: 'Фи',
+          description: 'Греческая буква фи',
+          example: ':phi'
+        },
+        {
+          pattern: ':chi',
+          template: '\\chi',
+          category: 'greek',
+          name: 'Хи',
+          description: 'Греческая буква хи',
+          example: ':chi'
+        },
+        {
+          pattern: ':psi',
+          template: '\\psi',
+          category: 'greek',
+          name: 'Пси',
+          description: 'Греческая буква пси',
+          example: ':psi'
+        },
+        {
+          pattern: ':omega',
+          template: '\\omega',
+          category: 'greek',
+          name: 'Омега',
+          description: 'Греческая буква омега',
+          example: ':omega'
+        },
+        
+        // Текстовые макросы
+        {
+          pattern: ':bf (.*)',
+          template: '\\textbf{$1}',
+          category: 'text',
+          name: 'Жирный шрифт',
+          description: 'Делает текст жирным',
+          example: ':bf важный текст'
+        },
+        {
+          pattern: ':it (.*)',
+          template: '\\textit{$1}',
+          category: 'text',
+          name: 'Курсив',
+          description: 'Делает текст курсивным',
+          example: ':it выделенный текст'
+        },
+        {
+          pattern: ':ul (.*)',
+          template: '\\underline{$1}',
+          category: 'text',
+          name: 'Подчеркнутый',
+          description: 'Подчеркивает текст',
+          example: ':ul подчеркнутый текст'
+        },
+        {
+          pattern: ':sc (.*)',
+          template: '\\textsc{$1}',
+          category: 'text',
+          name: 'Малые прописные',
+          description: 'Форматирует текст малыми прописными буквами',
+          example: ':sc малые прописные'
+        },
+        {
+          pattern: ':tt (.*)',
+          template: '\\texttt{$1}',
+          category: 'text',
+          name: 'Моноширинный',
+          description: 'Форматирует текст моноширинным шрифтом',
+          example: ':tt код'
+        },
+        {
+          pattern: ':url (.*)',
+          template: '\\url{$1}',
+          category: 'text',
+          name: 'URL',
+          description: 'Форматирует URL',
+          example: ':url https://www.example.com'
+        },
+        {
+          pattern: ':link\\{([^}]+)\\}\\{([^}]+)\\}',
+          template: '\\href{$2}{$1}',
+          category: 'text',
+          name: 'Гиперссылка',
+          description: 'Создает гиперссылку с текстом',
+          example: ':link{Текст ссылки}{https://www.example.com}'
+        },
+        
+        // Окружения
+        {
+          pattern: ':eq',
+          template: '\\begin{equation}\n\n\\end{equation}',
+          category: 'environment',
+          name: 'Уравнение',
+          description: 'Создает окружение для уравнения',
+          example: ':eq'
+        },
+        {
+          pattern: ':align',
+          template: '\\begin{align}\n\n\\end{align}',
+          category: 'environment',
+          name: 'Выравнивание',
+          description: 'Создает окружение для выравнивания уравнений',
+          example: ':align'
+        },
+        {
+          pattern: ':figure',
+          template: '\\begin{figure}[htbp]\n\\centering\n\\includegraphics[width=0.8\\textwidth]{}\n\\caption{}\n\\label{fig:}\n\\end{figure}',
+          category: 'environment',
+          name: 'Рисунок',
+          description: 'Создает окружение для рисунка',
+          example: ':figure'
+        },
+        {
+          pattern: ':table',
+          template: '\\begin{table}[htbp]\n\\centering\n\\begin{tabular}{|c|c|}\n\\hline\n & \\\\ \n\\hline\n & \\\\ \n\\hline\n\\end{tabular}\n\\caption{}\n\\label{tab:}\n\\end{table}',
+          category: 'environment',
+          name: 'Таблица',
+          description: 'Создает окружение для таблицы',
+          example: ':table'
+        },
+        {
+          pattern: ':theorem',
+          template: '\\begin{theorem}\n\n\\end{theorem}',
+          category: 'environment',
+          name: 'Теорема',
+          description: 'Создает окружение для теоремы',
+          example: ':theorem'
+        },
+        {
+          pattern: ':proof',
+          template: '\\begin{proof}\n\n\\end{proof}',
+          category: 'environment',
+          name: 'Доказательство',
+          description: 'Создает окружение для доказательства',
+          example: ':proof'
+        },
+        {
+          pattern: ':itemize',
+          template: '\\begin{itemize}\n\\item \n\\item \n\\end{itemize}',
+          category: 'environment',
+          name: 'Маркированный список',
+          description: 'Создает окружение для маркированного списка',
+          example: ':itemize'
+        },
+        {
+          pattern: ':enumerate',
+          template: '\\begin{enumerate}\n\\item \n\\item \n\\end{enumerate}',
+          category: 'environment',
+          name: 'Нумерованный список',
+          description: 'Создает окружение для нумерованного списка',
+          example: ':enumerate'
+        },
+        {
+          pattern: ':code',
+          template: '\\begin{verbatim}\n\n\\end{verbatim}',
+          category: 'environment',
+          name: 'Код',
+          description: 'Создает окружение для кода без форматирования',
+          example: ':code'
         }
       ];
+      
+      // Умные макросы (загружаем из localStorage или используем стандартный набор)
+      let smartMacros = [];
       
       // Загрузка сохраненных умных макросов
       if (localStorage.getItem('latex-smart-macros')) {
         try {
           smartMacros = JSON.parse(localStorage.getItem('latex-smart-macros'));
+          
+          // Проверяем, есть ли в сохраненных макросах все поля, добавленные в новой версии
+          smartMacros = smartMacros.map(macro => {
+            if (!macro.category) macro.category = 'custom';
+            if (!macro.name) {
+              // Генерируем имя из шаблона, если его нет
+              const patternExample = macro.pattern.replace(/\(([^)]+)\)/g, '$1');
+              macro.name = `Макрос ${patternExample}`;
+            }
+            if (!macro.description) macro.description = 'Пользовательский макрос';
+            if (!macro.example) {
+              // Создаем пример из шаблона
+              const example = macro.pattern.replace(/\(([^)]+)\)/g, '$1');
+              macro.example = example;
+            }
+            return macro;
+          });
         } catch (e) {
           console.error('Ошибка при загрузке умных макросов:', e);
-          smartMacros = [
-            {
-              pattern: '([^\\s/]+)/([^\\s/]+)',
-              template: '\\frac{$1}{$2}'
-            }
-          ];
+          // Используем только предустановленные макросы
+          smartMacros = [...predefinedMacros];
           localStorage.setItem('latex-smart-macros', JSON.stringify(smartMacros));
         }
       } else {
+        // Если нет сохраненных, используем предустановленные макросы
+        smartMacros = [...predefinedMacros];
         localStorage.setItem('latex-smart-macros', JSON.stringify(smartMacros));
       }
       
@@ -707,14 +1272,14 @@ F(x) = \int_{a}^{b} f(x) \, dx
                   // Создаем замену, подставляя захваченные группы
                   let replacement = smartMacro.template;
                   for (let i = 1; i < match.length; i++) {
-                    const placeholder = `$${i}`;
+                    const placeholder = `${i}`;
                     replacement = replacement.replace(new RegExp('\\' + placeholder, 'g'), match[i]);
                   }
                   
                   // Заменяем текст
                   cm.replaceRange(replacement, startPos, cursor);
                   macroApplied = true;
-                  document.getElementById('status').textContent = 'Применен умный макрос';
+                  document.getElementById('status').textContent = `Применен умный макрос: ${smartMacro.name || 'без имени'}`;
                   break;
                 }
               } catch (e) {
@@ -951,6 +1516,446 @@ F(x) = \int_{a}^{b} f(x) \, dx
         }
       }
       
+      // ===== УМНЫЕ МАКРОСЫ =====
+      
+      // Функция для отображения шаблонов макросов по категориям
+      function displayMacroTemplates(category) {
+        const templatesContainer = document.getElementById('macro-templates');
+        templatesContainer.innerHTML = '';
+        
+        // Фильтруем предустановленные макросы по категории
+        const filteredMacros = predefinedMacros.filter(macro => macro.category === category);
+        
+        if (category === 'custom') {
+          // Для пользовательских макросов показываем форму создания
+          document.getElementById('macro-custom-form').style.display = 'block';
+          document.getElementById('add-smart-macro-btn').style.display = 'block';
+        } else {
+          // Для других категорий скрываем форму создания
+          document.getElementById('macro-custom-form').style.display = 'none';
+          document.getElementById('add-smart-macro-btn').style.display = 'none';
+          
+          // Отображаем макросы выбранной категории
+          filteredMacros.forEach(macro => {
+            const templateElement = document.createElement('div');
+            templateElement.className = 'macro-template';
+            templateElement.setAttribute('data-pattern', macro.pattern);
+            templateElement.setAttribute('data-template', macro.template);
+            templateElement.setAttribute('data-name', macro.name);
+            templateElement.setAttribute('data-description', macro.description);
+            templateElement.setAttribute('data-example', macro.example);
+            templateElement.setAttribute('data-category', macro.category);
+            
+            // Проверяем, активен ли этот макрос
+            const isActive = smartMacros.some(m => m.pattern === macro.pattern && m.template === macro.template);
+            if (isActive) {
+              templateElement.classList.add('selected');
+            }
+            
+            templateElement.innerHTML = `
+              <div class="macro-name">${macro.name}</div>
+              <div class="macro-description">${macro.description}</div>
+              <div class="macro-preview">${macro.example} → ${macro.template.replace(/\$([0-9]+)/g, '...')}</div>
+            `;
+            
+            // Обработчик клика для выбора шаблона
+            templateElement.addEventListener('click', function() {
+              if (this.classList.contains('selected')) {
+                // Если уже выбран, удаляем его из активных макросов
+                removeMacro(macro.pattern, macro.template);
+                this.classList.remove('selected');
+              } else {
+                // Если не выбран, добавляем его в активные макросы
+                addMacro(macro);
+                this.classList.add('selected');
+              }
+            });
+            
+            templatesContainer.appendChild(templateElement);
+          });
+        }
+      }
+      
+      // Функция добавления макроса в активные макросы
+      function addMacro(macro) {
+        // Проверяем, существует ли уже такой макрос
+        const existingIndex = smartMacros.findIndex(m => m.pattern === macro.pattern && m.template === macro.template);
+        
+        if (existingIndex === -1) {
+          // Если не существует, добавляем
+          smartMacros.push(macro);
+          localStorage.setItem('latex-smart-macros', JSON.stringify(smartMacros));
+          updateActiveMacrosTags();
+          updateSmartMacrosList();
+        }
+      }
+      
+      // Функция удаления макроса из активных макросов
+      function removeMacro(pattern, template) {
+        // Находим индекс макроса для удаления
+        const index = smartMacros.findIndex(m => m.pattern === pattern && m.template === template);
+        
+        if (index !== -1) {
+          // Удаляем макрос из массива
+          smartMacros.splice(index, 1);
+          localStorage.setItem('latex-smart-macros', JSON.stringify(smartMacros));
+          updateActiveMacrosTags();
+          updateSmartMacrosList();
+        }
+      }
+      
+      // Функция обновления тегов активных макросов
+      function updateActiveMacrosTags() {
+        const tagsContainer = document.getElementById('active-macros-tags');
+        tagsContainer.innerHTML = '';
+        
+        // Группируем макросы по категориям
+        const categories = {};
+        smartMacros.forEach(macro => {
+          if (!categories[macro.category]) {
+            categories[macro.category] = [];
+          }
+          categories[macro.category].push(macro);
+        });
+        
+        // Отображаем теги по категориям
+        Object.keys(categories).forEach(category => {
+          const categoryName = getCategoryName(category);
+          const categoryHeader = document.createElement('div');
+          categoryHeader.style.fontWeight = 'bold';
+          categoryHeader.style.marginTop = '5px';
+          categoryHeader.style.marginBottom = '3px';
+          categoryHeader.textContent = categoryName;
+          tagsContainer.appendChild(categoryHeader);
+          
+          // Добавляем теги для этой категории
+          categories[category].forEach(macro => {
+            const tag = document.createElement('span');
+            tag.className = 'macro-tag';
+            tag.textContent = macro.name || macro.pattern.replace(/\([^)]+\)/g, '...');
+            tag.title = macro.description || 'Умный макрос';
+            tag.setAttribute('data-pattern', macro.pattern);
+            tag.setAttribute('data-template', macro.template);
+            
+            // Обработчик для отображения подробной информации о макросе
+            tag.addEventListener('click', function(e) {
+              e.stopPropagation();
+              showMacroDescription(macro, e);
+            });
+            
+            tagsContainer.appendChild(tag);
+          });
+        });
+        
+        // Если нет активных макросов, показываем сообщение
+        if (Object.keys(categories).length === 0) {
+          tagsContainer.innerHTML = '<p style="color: #666; font-style: italic;">Нет активных макросов. Выберите шаблоны или создайте свои.</p>';
+        }
+      }
+      
+      // Функция получения названия категории
+      function getCategoryName(category) {
+        const categoryNames = {
+          'math': 'Математика',
+          'text': 'Текст',
+          'greek': 'Греческие символы',
+          'environment': 'Окружения',
+          'custom': 'Пользовательские'
+        };
+        
+        return categoryNames[category] || 'Другое';
+      }
+      
+      // Функция показа описания макроса
+      function showMacroDescription(macro, event) {
+        const descriptionModal = document.getElementById('macro-description-modal');
+        
+        // Заполняем содержимое модального окна
+        document.getElementById('modal-macro-name').textContent = macro.name || 'Умный макрос';
+        document.getElementById('modal-macro-description').textContent = macro.description || 'Пользовательский макрос';
+        document.getElementById('modal-macro-example').textContent = macro.example || macro.pattern.replace(/\([^)]+\)/g, '...');
+        
+        // Получаем результат преобразования для примера
+        let result = macro.template;
+        try {
+          const regex = new RegExp(macro.pattern);
+          const match = macro.example.match(regex);
+          
+          if (match) {
+            for (let i = 1; i < match.length; i++) {
+              const placeholder = `${i}`;
+              result = result.replace(new RegExp('\\' + placeholder, 'g'), match[i]);
+            }
+          }
+        } catch (e) {
+          console.error('Ошибка при создании примера:', e);
+        }
+        
+        document.getElementById('modal-macro-result').textContent = result;
+        
+        // Позиционируем и показываем модальное окно
+        descriptionModal.style.left = (event.pageX + 10) + 'px';
+        descriptionModal.style.top = (event.pageY + 10) + 'px';
+        descriptionModal.style.display = 'block';
+        
+        // Закрытие модального окна при клике вне его
+        document.addEventListener('click', closeDescriptionModal);
+      }
+      
+      // Функция закрытия модального окна описания
+      function closeDescriptionModal(e) {
+        if (!document.getElementById('macro-description-modal').contains(e.target) &&
+            !e.target.classList.contains('macro-tag')) {
+          document.getElementById('macro-description-modal').style.display = 'none';
+          document.removeEventListener('click', closeDescriptionModal);
+        }
+      }
+      
+      // Функция обновления списка умных макросов
+      function updateSmartMacrosList() {
+        const smartMacrosList = document.getElementById('smart-macros-list');
+        smartMacrosList.innerHTML = '';
+        
+        // Группируем макросы по категориям
+        const categories = {};
+        smartMacros.forEach((macro, index) => {
+          if (!categories[macro.category]) {
+            categories[macro.category] = [];
+          }
+          categories[macro.category].push({...macro, index});
+        });
+        
+        // Отображаем макросы по категориям
+        Object.keys(categories).sort().forEach(category => {
+          const categoryName = getCategoryName(category);
+          const categoryHeader = document.createElement('div');
+          categoryHeader.style.padding = '8px';
+          categoryHeader.style.fontWeight = 'bold';
+          categoryHeader.style.backgroundColor = '#f5f5f5';
+          categoryHeader.style.borderBottom = '1px solid #ddd';
+          categoryHeader.textContent = categoryName;
+          smartMacrosList.appendChild(categoryHeader);
+          
+          // Сортируем макросы в категории по имени
+          categories[category].sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+          
+          // Добавляем макросы этой категории
+          categories[category].forEach(macro => {
+            const macroItem = document.createElement('div');
+            macroItem.style.padding = '8px';
+            macroItem.style.borderBottom = '1px solid #ddd';
+            
+            const patternExample = macro.pattern.replace(/\(([^)]+)\)/g, '...');
+            
+            macroItem.innerHTML = `
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                  <strong>${macro.name || patternExample}</strong>
+                  <div style="font-size: 12px; color: #666; margin-top: 3px;">${patternExample} → ${macro.template.replace(/\$([0-9]+)/g, '...')}</div>
+                </div>
+                <div>
+                  <button data-index="${macro.index}" class="edit-smart-macro" title="Редактировать">✏️</button>
+                  <button data-index="${macro.index}" class="delete-smart-macro" title="Удалить">🗑️</button>
+                </div>
+              </div>
+            `;
+            
+            smartMacrosList.appendChild(macroItem);
+          });
+        });
+        
+        // Если нет макросов, показываем сообщение
+        if (smartMacros.length === 0) {
+          smartMacrosList.innerHTML = '<div style="padding: 15px; text-align: center; color: #666;">Нет активных макросов</div>';
+        }
+        
+        // Добавляем обработчики событий для кнопок удаления и редактирования
+        document.querySelectorAll('.delete-smart-macro').forEach(button => {
+          button.addEventListener('click', function() {
+            const index = parseInt(this.getAttribute('data-index'));
+            if (confirm('Вы уверены, что хотите удалить этот макрос?')) {
+              smartMacros.splice(index, 1);
+              localStorage.setItem('latex-smart-macros', JSON.stringify(smartMacros));
+              updateSmartMacrosList();
+              updateActiveMacrosTags();
+              
+              // Обновляем выбранные шаблоны
+              const currentCategory = document.querySelector('.macro-category.active').getAttribute('data-category');
+              displayMacroTemplates(currentCategory);
+            }
+          });
+        });
+        
+        document.querySelectorAll('.edit-smart-macro').forEach(button => {
+          button.addEventListener('click', function() {
+            const index = parseInt(this.getAttribute('data-index'));
+            editMacro(index);
+          });
+        });
+      }
+      
+      // Функция редактирования макроса
+      function editMacro(index) {
+        const macro = smartMacros[index];
+        
+        // Переключаемся на вкладку "Пользовательский"
+        document.querySelectorAll('.macro-category').forEach(cat => cat.classList.remove('active'));
+        document.querySelector('.macro-category[data-category="custom"]').classList.add('active');
+        displayMacroTemplates('custom');
+        
+        // Заполняем форму данными макроса
+        document.getElementById('smart-macro-pattern').value = macro.pattern;
+        document.getElementById('smart-macro-template').value = macro.template;
+        document.getElementById('smart-macro-description').value = macro.description || '';
+        document.getElementById('smart-macro-category').value = macro.category;
+        
+        // Обновляем предпросмотр
+        updateSmartMacroPreview();
+        
+        // Изменяем кнопку добавления
+        const addButton = document.getElementById('add-smart-macro-btn');
+        addButton.textContent = 'Сохранить изменения';
+        addButton.setAttribute('data-editing', 'true');
+        addButton.setAttribute('data-index', index);
+      }
+      
+      // Функция обновления предпросмотра умного макроса
+      function updateSmartMacroPreview() {
+        const pattern = document.getElementById('smart-macro-pattern').value;
+        const template = document.getElementById('smart-macro-template').value;
+        
+        if (pattern && template) {
+          try {
+            // Подготавливаем пример для предпросмотра
+            const exampleBefore = pattern.replace(/\(([^)]+)\)/g, '$1');
+            
+            // Имитируем замену для предпросмотра
+            let exampleAfter = template;
+            try {
+              const regex = new RegExp(pattern);
+              const match = exampleBefore.match(regex);
+              
+              if (match) {
+                for (let i = 1; i < match.length; i++) {
+                  const placeholder = `${i}`;
+                  exampleAfter = exampleAfter.replace(new RegExp('\\ + i, 'g'), match[i]);
+                }
+              }
+            } catch (e) {
+              console.error('Ошибка при предпросмотре:', e);
+            }
+            
+            // Обновляем элементы предпросмотра
+            document.getElementById('smart-macro-before').textContent = exampleBefore;
+            document.getElementById('smart-macro-after').textContent = exampleAfter;
+          } catch (e) {
+            console.error('Ошибка обновления предпросмотра:', e);
+          }
+        }
+      }
+      
+      // Функция экспорта макросов
+      function exportMacros() {
+        // Создаем строку JSON с макросами
+        const macrosJSON = JSON.stringify(smartMacros, null, 2);
+        
+        // Создаем элемент для скачивания
+        const element = document.createElement('a');
+        element.setAttribute('href', 'data:text/json;charset=utf-8,' + encodeURIComponent(macrosJSON));
+        element.setAttribute('download', 'latex-smart-macros.json');
+        element.style.display = 'none';
+        
+        document.body.appendChild(element);
+        element.click();
+        document.body.removeChild(element);
+      }
+      
+      // Функция импорта макросов
+      function importMacros() {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = '.json';
+        
+        input.onchange = function(e) {
+          const file = e.target.files[0];
+          if (!file) return;
+          
+          const reader = new FileReader();
+          reader.onload = function(event) {
+            try {
+              const importedMacros = JSON.parse(event.target.result);
+              
+              if (Array.isArray(importedMacros)) {
+                // Валидация импортированных макросов
+                const validMacros = importedMacros.filter(macro => 
+                  macro.pattern && macro.template &&
+                  typeof macro.pattern === 'string' && 
+                  typeof macro.template === 'string'
+                ).map(macro => {
+                  // Добавляем отсутствующие поля
+                  if (!macro.category) macro.category = 'custom';
+                  if (!macro.name) {
+                    const patternExample = macro.pattern.replace(/\(([^)]+)\)/g, '$1');
+                    macro.name = `Макрос ${patternExample}`;
+                  }
+                  if (!macro.description) macro.description = 'Импортированный макрос';
+                  if (!macro.example) {
+                    const example = macro.pattern.replace(/\(([^)]+)\)/g, '$1');
+                    macro.example = example;
+                  }
+                  return macro;
+                });
+                
+                if (validMacros.length === 0) {
+                  alert('Файл не содержит корректных макросов.');
+                  return;
+                }
+                
+                // Спрашиваем, заменить или добавить
+                const action = confirm('Заменить существующие макросы? "OK" - заменить, "Отмена" - добавить к существующим');
+                
+                if (action) {
+                  // Заменяем все макросы
+                  smartMacros = validMacros;
+                } else {
+                  // Добавляем к существующим, избегая дубликатов
+                  validMacros.forEach(newMacro => {
+                    const isDuplicate = smartMacros.some(existingMacro => 
+                      existingMacro.pattern === newMacro.pattern && 
+                      existingMacro.template === newMacro.template
+                    );
+                    
+                    if (!isDuplicate) {
+                      smartMacros.push(newMacro);
+                    }
+                  });
+                }
+                
+                // Сохраняем и обновляем интерфейс
+                localStorage.setItem('latex-smart-macros', JSON.stringify(smartMacros));
+                updateSmartMacrosList();
+                updateActiveMacrosTags();
+                
+                // Обновляем выбранные шаблоны
+                const currentCategory = document.querySelector('.macro-category.active').getAttribute('data-category');
+                displayMacroTemplates(currentCategory);
+                
+                alert(`Импортировано ${validMacros.length} макросов.`);
+              } else {
+                alert('Неверный формат файла. Ожидается массив макросов.');
+              }
+            } catch (error) {
+              console.error('Ошибка при импорте макросов:', error);
+              alert('Ошибка при импорте макросов: ' + error.message);
+            }
+          };
+          
+          reader.readAsText(file);
+        };
+        
+        input.click();
+      }
+      
       // ===== ФАЙЛОВЫЕ ОПЕРАЦИИ =====
       
       // Загрузка списка файлов
@@ -1182,78 +2187,6 @@ F(x) = \int_{a}^{b} f(x) \, dx
         loadFilesList();
       }
       
-      // ===== УМНЫЕ МАКРОСЫ =====
-      
-      // Функция обновления списка умных макросов
-      function updateSmartMacrosList() {
-        const smartMacrosList = document.getElementById('smart-macros-list');
-        smartMacrosList.innerHTML = '';
-        
-        smartMacros.forEach((macro, index) => {
-          const macroItem = document.createElement('div');
-          macroItem.style.padding = '8px';
-          macroItem.style.borderBottom = '1px solid #ddd';
-          
-          const patternExample = macro.pattern.replace(/\(([^)]+)\)/g, '$1');
-          
-          macroItem.innerHTML = `
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-              <div><strong>${patternExample}</strong> → <code>${macro.template}</code></div>
-              <div>
-                <button data-index="${index}" class="delete-smart-macro">Удалить</button>
-              </div>
-            </div>
-          `;
-          
-          smartMacrosList.appendChild(macroItem);
-        });
-        
-        // Добавляем обработчики событий для кнопок удаления
-        document.querySelectorAll('.delete-smart-macro').forEach(button => {
-          button.addEventListener('click', function() {
-            const index = parseInt(this.getAttribute('data-index'));
-            smartMacros.splice(index, 1);
-            localStorage.setItem('latex-smart-macros', JSON.stringify(smartMacros));
-            updateSmartMacrosList();
-          });
-        });
-      }
-      
-      // Функция обновления предпросмотра умного макроса
-      function updateSmartMacroPreview() {
-        const pattern = document.getElementById('smart-macro-pattern').value;
-        const template = document.getElementById('smart-macro-template').value;
-        
-        if (pattern && template) {
-          try {
-            // Подготавливаем пример для предпросмотра
-            const exampleBefore = pattern.replace(/\(([^)]+)\)/g, '$1');
-            
-            // Имитируем замену для предпросмотра
-            let exampleAfter = template;
-            try {
-              const regex = new RegExp(pattern);
-              const match = exampleBefore.match(regex);
-              
-              if (match) {
-                for (let i = 1; i < match.length; i++) {
-                  const placeholder = `${i}`;
-                  exampleAfter = exampleAfter.replace(new RegExp('\\' + placeholder, 'g'), match[i]);
-                }
-              }
-            } catch (e) {
-              console.error('Ошибка при предпросмотре:', e);
-            }
-            
-            // Обновляем элементы предпросмотра
-            document.getElementById('smart-macro-before').textContent = exampleBefore;
-            document.getElementById('smart-macro-after').textContent = exampleAfter;
-          } catch (e) {
-            console.error('Ошибка обновления предпросмотра:', e);
-          }
-        }
-      }
-      
       // ===== НАСТРОЙКИ =====
       
       // Функция применения настроек
@@ -1276,10 +2209,102 @@ F(x) = \int_{a}^{b} f(x) \, dx
       
       // ===== ОБРАБОТЧИКИ СОБЫТИЙ =====
       
+      // Обработчики для категорий умных макросов
+      document.querySelectorAll('.macro-category').forEach(category => {
+        category.addEventListener('click', function() {
+          document.querySelectorAll('.macro-category').forEach(cat => cat.classList.remove('active'));
+          this.classList.add('active');
+          
+          const categoryName = this.getAttribute('data-category');
+          displayMacroTemplates(categoryName);
+        });
+      });
+      
+      // Обработчики для полей умных макросов
+      document.getElementById('smart-macro-pattern').addEventListener('input', updateSmartMacroPreview);
+      document.getElementById('smart-macro-template').addEventListener('input', updateSmartMacroPreview);
+      
+      // Добавление умного макроса
+      document.getElementById('add-smart-macro-btn').addEventListener('click', function() {
+        const pattern = document.getElementById('smart-macro-pattern').value.trim();
+        const template = document.getElementById('smart-macro-template').value.trim();
+        const description = document.getElementById('smart-macro-description').value.trim();
+        const category = document.getElementById('smart-macro-category').value;
+        
+        if (!pattern || !template) {
+          alert('Пожалуйста, заполните поля шаблона и замены.');
+          return;
+        }
+        
+        // Проверка валидности регулярного выражения
+        try {
+          new RegExp(pattern);
+        } catch (e) {
+          alert('Ошибка в шаблоне. Пожалуйста, проверьте корректность регулярного выражения.');
+          return;
+        }
+        
+        // Генерируем имя и пример, если они не были указаны
+        const patternExample = pattern.replace(/\(([^)]+)\)/g, '$1');
+        const name = 'Макрос ' + patternExample;
+        
+        // Создаем новый умный макрос
+        const newMacro = {
+          pattern: pattern,
+          template: template,
+          category: category,
+          name: name,
+          description: description || 'Пользовательский макрос',
+          example: patternExample
+        };
+        
+        // Проверяем, редактируем ли мы существующий макрос
+        if (this.getAttribute('data-editing') === 'true') {
+          const index = parseInt(this.getAttribute('data-index'));
+          smartMacros[index] = newMacro;
+          
+          // Сбрасываем режим редактирования
+          this.textContent = 'Добавить умный макрос';
+          this.removeAttribute('data-editing');
+          this.removeAttribute('data-index');
+        } else {
+          // Добавляем новый умный макрос
+          smartMacros.push(newMacro);
+        }
+        
+        // Сохраняем в localStorage
+        localStorage.setItem('latex-smart-macros', JSON.stringify(smartMacros));
+        
+        // Очищаем поля формы
+        document.getElementById('smart-macro-pattern').value = '';
+        document.getElementById('smart-macro-template').value = '';
+        document.getElementById('smart-macro-description').value = '';
+        document.getElementById('smart-macro-category').value = 'custom';
+        
+        // Обновляем список и теги
+        updateSmartMacrosList();
+        updateActiveMacrosTags();
+        
+        // Обновляем предпросмотр
+        document.getElementById('smart-macro-before').textContent = 'a1/b1';
+        document.getElementById('smart-macro-after').textContent = '\\frac{a1}{b1}';
+      });
+      
+      // Экспорт умных макросов
+      document.getElementById('export-macros-btn').addEventListener('click', exportMacros);
+      
+      // Импорт умных макросов
+      document.getElementById('import-macros-btn').addEventListener('click', importMacros);
+      
       // Настройка обработчиков для модальных окон
       document.getElementById('smart-macros-btn').addEventListener('click', function() {
         document.getElementById('smart-macros-modal').style.display = 'block';
         updateSmartMacrosList();
+        updateActiveMacrosTags();
+        
+        // Отображаем шаблоны первой активной категории
+        const activeCategory = document.querySelector('.macro-category.active').getAttribute('data-category');
+        displayMacroTemplates(activeCategory);
       });
       
       document.getElementById('settings-btn').addEventListener('click', function() {
@@ -1306,49 +2331,6 @@ F(x) = \int_{a}^{b} f(x) \, dx
             modal.style.display = 'none';
           }
         });
-      });
-      
-      // Обработчики для полей умных макросов
-      document.getElementById('smart-macro-pattern').addEventListener('input', updateSmartMacroPreview);
-      document.getElementById('smart-macro-template').addEventListener('input', updateSmartMacroPreview);
-      
-      // Добавление умного макроса
-      document.getElementById('add-smart-macro-btn').addEventListener('click', function() {
-        const pattern = document.getElementById('smart-macro-pattern').value.trim();
-        const template = document.getElementById('smart-macro-template').value.trim();
-        
-        if (!pattern || !template) {
-          alert('Пожалуйста, заполните оба поля.');
-          return;
-        }
-        
-        // Проверка валидности регулярного выражения
-        try {
-          new RegExp(pattern);
-        } catch (e) {
-          alert('Ошибка в шаблоне. Пожалуйста, проверьте корректность регулярного выражения.');
-          return;
-        }
-        
-        // Добавляем новый умный макрос
-        smartMacros.push({
-          pattern: pattern,
-          template: template
-        });
-        
-        // Сохраняем в localStorage
-        localStorage.setItem('latex-smart-macros', JSON.stringify(smartMacros));
-        
-        // Очищаем поля формы
-        document.getElementById('smart-macro-pattern').value = '';
-        document.getElementById('smart-macro-template').value = '';
-        
-        // Обновляем список
-        updateSmartMacrosList();
-        
-        // Обновляем предпросмотр
-        document.getElementById('smart-macro-before').textContent = 'a1/b1';
-        document.getElementById('smart-macro-after').textContent = '\\frac{a1}{b1}';
       });
       
       // Обработчики для настроек
@@ -1451,14 +2433,16 @@ F(x) = \int_{a}^{b} f(x) \, dx
       document.getElementById('help-btn').addEventListener('click', function() {
         alert('Справка по LaTeX:\n\n' + 
           '- Используйте кнопки панели инструментов для вставки типовых элементов\n' +
-          '- Нажмите Tab после ввода выражения вида a/b для автоматического преобразования в дробь\n' +
+          '- Нажмите Tab после ввода выражения для автоматического преобразования с умными макросами\n' +
           '- Создавайте собственные умные макросы через меню "Умные макросы"\n' +
+          '- Выбирайте макросы из предустановленных шаблонов по категориям\n' +
+          '- Экспортируйте и импортируйте свои наборы макросов\n' +
           '- Управляйте файлами через меню "Файлы"\n' +
           '- Настраивайте автокомпиляцию и автосохранение в настройках\n' +
           '- Нажмите Ctrl+Enter для компиляции документа');
       });
       
-      // Загружаем файл при запуске
+      // Инициализация: загружаем файл при запуске
       // Проверяем, есть ли сохраненные файлы
       const fileKeys = Object.keys(localStorage).filter(key => key.startsWith('latex-document-'));
       if (fileKeys.length > 0) {
