@@ -82,7 +82,49 @@ main {
   gap: 4px;
   flex-wrap: wrap;
 }
+/* Основной контейнер редактора должен занимать всю доступную высоту */
+.editor-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+  position: relative;
+}
 
+/* CodeMirror должен заполнять весь контейнер */
+.CodeMirror {
+  height: 100% !important;
+  font-size: 14px;
+  flex: 1;
+}
+
+/* Убедимся, что панель редактора корректно растягивается */
+.editor-pane {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid #ddd;
+  min-height: 0; /* Важно для корректной работы flex внутри */
+}
+
+/* Убедимся, что главный контейнер правильно расширяется */
+main {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+  height: calc(100vh - 90px); /* Вычитаем высоту заголовка и строки статуса */
+}
+
+/* Если есть скролл, он должен быть внутри редактора */
+.CodeMirror-scroll {
+  height: 100%;
+}
+
+/* Убедимся, что инлайновый редактор скрыт */
+#editor {
+  display: none;
+}
 /* Контейнер редактора */
 .editor-container {
   flex: 1;
