@@ -223,3 +223,49 @@ function updateStatus(message, timeout = 2000) {
 
 // Экспортируем функцию updateStatus для использования из других модулей
 window.updateStatus = updateStatus;
+/**
+ * Устанавливает правильный размер редактора CodeMirror
+ */
+function adjustEditorSize() {
+  if (!editor) return;
+  
+  // Устанавливаем таймаут, чтобы дать DOM полностью сформироваться
+  setTimeout(() => {
+    // Получаем все элементы CodeMirror
+    const cmElements = document.querySelectorAll('.CodeMirror');
+    
+    cmElements.forEach(cm => {
+      // Устанавливаем высоту 100% и flex: 1
+      cm.style.height = '100%';
+      cm.style.flex = '1';
+      
+      // Обновляем редактор
+      editor.refresh();
+    });
+  }, 100);
+}
+
+/**
+ * Функция для обработки изменения размера окна
+ */
+function setupEditorResize() {
+  // Обработчик изменения размера окна
+  window.addEventListener('resize', function() {
+    adjustEditorSize();
+  });
+  
+  // Вызываем первичную настройку размера
+  adjustEditorSize();
+}
+
+// Вызываем функцию настройки размера после инициализации редактора
+document.addEventListener('DOMContentLoaded', function() {
+  if (typeof editor !== 'undefined' && editor) {
+    setupEditorResize();
+  }
+});
+
+// Корректируем размер редактора при полной загрузке страницы
+window.addEventListener('load', function() {
+  adjustEditorSize();
+});
