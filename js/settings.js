@@ -29,6 +29,9 @@ function loadSettings() {
     // Если настроек нет, сохраняем настройки по умолчанию
     localStorage.setItem('latex-editor-settings', JSON.stringify(settings));
   }
+  
+  // Делаем настройки доступными глобально для других модулей
+  window.settings = settings;
 }
 
 /**
@@ -36,14 +39,36 @@ function loadSettings() {
  */
 function applySettings() {
   // Применяем размер шрифта
-  document.querySelector('.CodeMirror').style.fontSize = settings.fontSize + 'px';
+  const cmElement = document.querySelector('.CodeMirror');
+  if (cmElement) {
+    cmElement.style.fontSize = settings.fontSize + 'px';
+  }
   
   // Обновляем элементы формы
-  document.getElementById('autosave-toggle').checked = settings.autoSaveEnabled;
-  document.getElementById('autocompile-toggle').checked = settings.autoCompileEnabled;
-  document.getElementById('autosave-interval').value = settings.autoSaveInterval;
-  document.getElementById('autocompile-delay').value = settings.autoCompileDelay;
-  document.getElementById('font-size').value = settings.fontSize;
+  const autosaveToggle = document.getElementById('autosave-toggle');
+  if (autosaveToggle) {
+    autosaveToggle.checked = settings.autoSaveEnabled;
+  }
+  
+  const autocompileToggle = document.getElementById('autocompile-toggle');
+  if (autocompileToggle) {
+    autocompileToggle.checked = settings.autoCompileEnabled;
+  }
+  
+  const autosaveInterval = document.getElementById('autosave-interval');
+  if (autosaveInterval) {
+    autosaveInterval.value = settings.autoSaveInterval;
+  }
+  
+  const autocompileDelay = document.getElementById('autocompile-delay');
+  if (autocompileDelay) {
+    autocompileDelay.value = settings.autoCompileDelay;
+  }
+  
+  const fontSize = document.getElementById('font-size');
+  if (fontSize) {
+    fontSize.value = settings.fontSize;
+  }
 }
 
 /**
@@ -51,6 +76,9 @@ function applySettings() {
  */
 function saveSettings() {
   localStorage.setItem('latex-editor-settings', JSON.stringify(settings));
+  
+  // Обновляем глобальные настройки
+  window.settings = settings;
 }
 
 /**
@@ -58,45 +86,69 @@ function saveSettings() {
  */
 function setupSettingsEvents() {
   // Открытие модального окна настроек
-  document.getElementById('settings-btn').addEventListener('click', function() {
-    document.getElementById('settings-modal').style.display = 'block';
-    applySettings();
-  });
+  const settingsBtn = document.getElementById('settings-btn');
+  if (settingsBtn) {
+    settingsBtn.addEventListener('click', function() {
+      const modal = document.getElementById('settings-modal');
+      if (modal) {
+        modal.style.display = 'block';
+        applySettings();
+      }
+    });
+  }
   
   // Переключатель автосохранения
-  document.getElementById('autosave-toggle').addEventListener('change', function() {
-    settings.autoSaveEnabled = this.checked;
-    saveSettings();
-  });
+  const autosaveToggle = document.getElementById('autosave-toggle');
+  if (autosaveToggle) {
+    autosaveToggle.addEventListener('change', function() {
+      settings.autoSaveEnabled = this.checked;
+      saveSettings();
+    });
+  }
   
   // Переключатель автокомпиляции
-  document.getElementById('autocompile-toggle').addEventListener('change', function() {
-    settings.autoCompileEnabled = this.checked;
-    saveSettings();
-  });
+  const autocompileToggle = document.getElementById('autocompile-toggle');
+  if (autocompileToggle) {
+    autocompileToggle.addEventListener('change', function() {
+      settings.autoCompileEnabled = this.checked;
+      saveSettings();
+    });
+  }
   
   // Интервал автосохранения
-  document.getElementById('autosave-interval').addEventListener('change', function() {
-    const value = parseInt(this.value);
-    if (value >= 1 && value <= 30) {
-      settings.autoSaveInterval = value;
-      saveSettings();
-    }
-  });
+  const autosaveInterval = document.getElementById('autosave-interval');
+  if (autosaveInterval) {
+    autosaveInterval.addEventListener('change', function() {
+      const value = parseInt(this.value);
+      if (value >= 1 && value <= 30) {
+        settings.autoSaveInterval = value;
+        saveSettings();
+      }
+    });
+  }
   
   // Задержка автокомпиляции
-  document.getElementById('autocompile-delay').addEventListener('change', function() {
-    const value = parseInt(this.value);
-    if (value >= 1 && value <= 10) {
-      settings.autoCompileDelay = value;
-      saveSettings();
-    }
-  });
+  const autocompileDelay = document.getElementById('autocompile-delay');
+  if (autocompileDelay) {
+    autocompileDelay.addEventListener('change', function() {
+      const value = parseInt(this.value);
+      if (value >= 1 && value <= 10) {
+        settings.autoCompileDelay = value;
+        saveSettings();
+      }
+    });
+  }
   
   // Размер шрифта
-  document.getElementById('font-size').addEventListener('change', function() {
-    settings.fontSize = parseInt(this.value);
-    document.querySelector('.CodeMirror').style.fontSize = settings.fontSize + 'px';
-    saveSettings();
-  });
+  const fontSize = document.getElementById('font-size');
+  if (fontSize) {
+    fontSize.addEventListener('change', function() {
+      settings.fontSize = parseInt(this.value);
+      const cmElement = document.querySelector('.CodeMirror');
+      if (cmElement) {
+        cmElement.style.fontSize = settings.fontSize + 'px';
+      }
+      saveSettings();
+    });
+  }
 }
