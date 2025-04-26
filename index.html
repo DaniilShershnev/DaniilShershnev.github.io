@@ -633,260 +633,89 @@ F(x) = \int_{a}^{b} f(x) \, dx
     </div>
   </main>
   
-  <!-- Модальное окно для умных макросов -->
-  <div id="smart-macros-modal" class="modal">
-    <div class="modal-content" style="width: 70%; max-width: 800px;">
-      <span class="close">&times;</span>
-      <h2>Умные макросы</h2>
+  <!-- Обновленное модальное окно для создания умных макросов -->
+<div id="smart-macros-modal" class="modal">
+  <div class="modal-content" style="width: 70%; max-width: 800px;">
+    <span class="close">&times;</span>
+    <h2>Умные макросы</h2>
+    
+    <p>Умные макросы автоматически преобразуют текстовые шаблоны в LaTeX команды при нажатии Tab.</p>
+    
+    <!-- Вкладки для категорий -->
+    <div class="macro-tabs">
+      <button class="macro-tab-btn active" data-tab="user-macros">Мои макросы</button>
+      <button class="macro-tab-btn" data-tab="math-macros">Математика</button>
+      <button class="macro-tab-btn" data-tab="structure-macros">Структура</button>
+      <button class="macro-tab-btn" data-tab="text-macros">Форматирование</button>
+      <button class="macro-tab-btn" data-tab="env-macros">Окружения</button>
+      <button class="macro-tab-btn" data-tab="create-macro">Создать</button>
+    </div>
+    
+    <!-- Остальные вкладки остаются без изменений -->
+    
+    <!-- Создание пользовательского макроса - обновлено -->
+    <div class="macro-tab-content" id="create-macro" style="display: none;">
+      <h3>Создать свой макрос</h3>
       
-      <p>Умные макросы автоматически преобразуют текстовые шаблоны в LaTeX команды при нажатии Tab.</p>
-      
-      <!-- Вкладки для категорий -->
-      <div class="macro-tabs">
-        <button class="macro-tab-btn active" data-tab="user-macros">Мои макросы</button>
-        <button class="macro-tab-btn" data-tab="math-macros">Математика</button>
-        <button class="macro-tab-btn" data-tab="structure-macros">Структура</button>
-        <button class="macro-tab-btn" data-tab="text-macros">Форматирование</button>
-        <button class="macro-tab-btn" data-tab="env-macros">Окружения</button>
-        <button class="macro-tab-btn" data-tab="create-macro">Создать</button>
+      <!-- Новый упрощенный режим -->
+      <div class="settings-row" style="margin-bottom: 15px;">
+        <label class="switch">
+          <input type="checkbox" id="advanced-mode-toggle">
+          <span class="slider"></span>
+        </label>
+        <label for="advanced-mode-toggle">Расширенный режим (регулярные выражения)</label>
       </div>
       
-      <!-- Пользовательские макросы -->
-      <div class="macro-tab-content" id="user-macros">
-        <h3>Ваши пользовательские макросы</h3>
-        <div id="smart-macros-list" class="macros-list">
-          <!-- Здесь будет список пользовательских макросов -->
-        </div>
-        <p class="empty-list-message" id="empty-user-macros">У вас пока нет пользовательских макросов. Перейдите на вкладку "Создать" чтобы добавить макрос.</p>
-      </div>
-      
-      <!-- Математические макросы -->
-      <div class="macro-tab-content" id="math-macros" style="display: none;">
-        <h3>Математические макросы</h3>
-        <div class="macros-list predefined-macros">
-          <div class="macro-item">
-            <div class="macro-info">
-              <div class="macro-pattern">a/b</div>
-              <div class="macro-arrow">→</div>
-              <div class="macro-result">\frac{a}{b}</div>
-            </div>
-            <button class="add-predefined-macro" data-pattern="([^\\s/]+)/([^\\s/]+)" data-template="\frac{$1}{$2}">Добавить</button>
-          </div>
-          <div class="macro-item">
-            <div class="macro-info">
-              <div class="macro-pattern">a^b</div>
-              <div class="macro-arrow">→</div>
-              <div class="macro-result">a^{b}</div>
-            </div>
-            <button class="add-predefined-macro" data-pattern="([A-Za-z0-9]+)\^([A-Za-z0-9]+)" data-template="$1^{$2}">Добавить</button>
-          </div>
-          <div class="macro-item">
-            <div class="macro-info">
-              <div class="macro-pattern">a_b</div>
-              <div class="macro-arrow">→</div>
-              <div class="macro-result">a_{b}</div>
-            </div>
-            <button class="add-predefined-macro" data-pattern="([A-Za-z0-9]+)_([A-Za-z0-9]+)" data-template="$1_{$2}">Добавить</button>
-          </div>
-          <div class="macro-item">
-            <div class="macro-info">
-              <div class="macro-pattern">\sqrt n</div>
-              <div class="macro-arrow">→</div>
-              <div class="macro-result">\sqrt{n}</div>
-            </div>
-            <button class="add-predefined-macro" data-pattern="\\sqrt\\s+([A-Za-z0-9]+)" data-template="\sqrt{$1}">Добавить</button>
-          </div>
-          <div class="macro-item">
-            <div class="macro-info">
-              <div class="macro-pattern">\int_a^b</div>
-              <div class="macro-arrow">→</div>
-              <div class="macro-result">\int_{a}^{b}</div>
-            </div>
-            <button class="add-predefined-macro" data-pattern="\\int_([^\\s^]+)\^([^\\s]+)" data-template="\int_{$1}^{$2}">Добавить</button>
-          </div>
-          <div class="macro-item">
-            <div class="macro-info">
-              <div class="macro-pattern">\sum_i^n</div>
-              <div class="macro-arrow">→</div>
-              <div class="macro-result">\sum_{i=1}^{n}</div>
-            </div>
-            <button class="add-predefined-macro" data-pattern="\\sum_([^\\s^]+)\^([^\\s]+)" data-template="\sum_{$1=1}^{$2}">Добавить</button>
-          </div>
-          <div class="macro-item">
-            <div class="macro-info">
-              <div class="macro-pattern">\lim_n</div>
-              <div class="macro-arrow">→</div>
-              <div class="macro-result">\lim_{n \to \infty}</div>
-            </div>
-            <button class="add-predefined-macro" data-pattern="\\lim_([^\\s^]+)" data-template="\lim_{$1 \to \infty}">Добавить</button>
-          </div>
-          <div class="macro-item">
-            <div class="macro-info">
-              <div class="macro-pattern">\mat 2x2</div>
-              <div class="macro-arrow">→</div>
-              <div class="macro-result">\begin{pmatrix} a & b \\ c & d \end{pmatrix}</div>
-            </div>
-            <button class="add-predefined-macro" data-pattern="\\mat\\s+2x2" data-template="\begin{pmatrix} a & b \\ c & d \end{pmatrix}">Добавить</button>
-          </div>
-          <div class="macro-item">
-            <div class="macro-info">
-              <div class="macro-pattern">\mat 3x3</div>
-              <div class="macro-arrow">→</div>
-              <div class="macro-result">\begin{pmatrix} a & b & c \\ d & e & f \\ g & h & i \end{pmatrix}</div>
-            </div>
-            <button class="add-predefined-macro" data-pattern="\\mat\\s+3x3" data-template="\begin{pmatrix} a & b & c \\ d & e & f \\ g & h & i \end{pmatrix}">Добавить</button>
-          </div>
-        </div>
-      </div>
-      
-      <!-- Структурные макросы -->
-      <div class="macro-tab-content" id="structure-macros" style="display: none;">
-        <h3>Структурные макросы</h3>
-        <div class="macros-list predefined-macros">
-          <div class="macro-item">
-            <div class="macro-info">
-              <div class="macro-pattern">\sec Заголовок</div>
-              <div class="macro-arrow">→</div>
-              <div class="macro-result">\section{Заголовок}</div>
-            </div>
-            <button class="add-predefined-macro" data-pattern="\\sec\\s+(.*)" data-template="\section{$1}">Добавить</button>
-          </div>
-          <div class="macro-item">
-            <div class="macro-info">
-              <div class="macro-pattern">\ssec Заголовок</div>
-              <div class="macro-arrow">→</div>
-              <div class="macro-result">\subsection{Заголовок}</div>
-            </div>
-            <button class="add-predefined-macro" data-pattern="\\ssec\\s+(.*)" data-template="\subsection{$1}">Добавить</button>
-          </div>
-          <div class="macro-item">
-            <div class="macro-info">
-              <div class="macro-pattern">\tab 3x2</div>
-              <div class="macro-arrow">→</div>
-              <div class="macro-result">\begin{tabular}{|c|c|c|}\n\hline\n  &  &  \\\\\n\hline\n  &  &  \\\\\n\hline\n\end{tabular}</div>
-            </div>
-            <button class="add-predefined-macro" data-pattern="\\tab\\s+3x2" data-template="\begin{tabular}{|c|c|c|}\n\hline\n  &  &  \\\\\n\hline\n  &  &  \\\\\n\hline\n\end{tabular}">Добавить</button>
-          </div>
-          <div class="macro-item">
-            <div class="macro-info">
-              <div class="macro-pattern">\fig имя_файла</div>
-              <div class="macro-arrow">→</div>
-              <div class="macro-result">\begin{figure}[h]\n\centering\n\includegraphics[width=0.7\textwidth]{имя_файла}\n\caption{Подпись к рисунку}\n\label{fig:имя_файла}\n\end{figure}</div>
-            </div>
-            <button class="add-predefined-macro" data-pattern="\\fig\\s+(\\S+)" data-template="\begin{figure}[h]\n\centering\n\includegraphics[width=0.7\textwidth]{$1}\n\caption{Подпись к рисунку}\n\label{fig:$1}\n\end{figure}">Добавить</button>
-          </div>
-          <div class="macro-item">
-            <div class="macro-info">
-              <div class="macro-pattern">\li 3</div>
-              <div class="macro-arrow">→</div>
-              <div class="macro-result">\begin{itemize}\n\item Пункт 1\n\item Пункт 2\n\item Пункт 3\n\end{itemize}</div>
-            </div>
-            <button class="add-predefined-macro" data-pattern="\\li\\s+3" data-template="\begin{itemize}\n\item Пункт 1\n\item Пункт 2\n\item Пункт 3\n\end{itemize}">Добавить</button>
-          </div>
-        </div>
-      </div>
-      
-      <!-- Форматирование текста -->
-      <div class="macro-tab-content" id="text-macros" style="display: none;">
-        <h3>Макросы форматирования текста</h3>
-        <div class="macros-list predefined-macros">
-          <div class="macro-item">
-            <div class="macro-info">
-              <div class="macro-pattern">\bf текст</div>
-              <div class="macro-arrow">→</div>
-              <div class="macro-result">\textbf{текст}</div>
-            </div>
-            <button class="add-predefined-macro" data-pattern="\\bf\\s+(.*)" data-template="\textbf{$1}">Добавить</button>
-          </div>
-          <div class="macro-item">
-            <div class="macro-info">
-              <div class="macro-pattern">\it текст</div>
-              <div class="macro-arrow">→</div>
-              <div class="macro-result">\textit{текст}</div>
-            </div>
-            <button class="add-predefined-macro" data-pattern="\\it\\s+(.*)" data-template="\textit{$1}">Добавить</button>
-          </div>
-          <div class="macro-item">
-            <div class="macro-info">
-              <div class="macro-pattern">\ul текст</div>
-              <div class="macro-arrow">→</div>
-              <div class="macro-result">\underline{текст}</div>
-            </div>
-            <button class="add-predefined-macro" data-pattern="\\ul\\s+(.*)" data-template="\underline{$1}">Добавить</button>
-          </div>
-          <div class="macro-item">
-            <div class="macro-info">
-              <div class="macro-pattern">\tt текст</div>
-              <div class="macro-arrow">→</div>
-              <div class="macro-result">\texttt{текст}</div>
-            </div>
-            <button class="add-predefined-macro" data-pattern="\\tt\\s+(.*)" data-template="\texttt{$1}">Добавить</button>
-          </div>
-          <div class="macro-item">
-            <div class="macro-info">
-              <div class="macro-pattern">\fn текст</div>
-              <div class="macro-arrow">→</div>
-              <div class="macro-result">\footnote{текст}</div>
-            </div>
-            <button class="add-predefined-macro" data-pattern="\\fn\\s+(.*)" data-template="\footnote{$1}">Добавить</button>
-          </div>
-        </div>
-      </div>
-      
-      <!-- Окружения -->
-      <div class="macro-tab-content" id="env-macros" style="display: none;">
-        <h3>Макросы окружений</h3>
-        <div class="macros-list predefined-macros">
-          <div class="macro-item">
-            <div class="macro-info">
-              <div class="macro-pattern">\thm</div>
-              <div class="macro-arrow">→</div>
-              <div class="macro-result">\begin{theorem}\n  \n\end{theorem}</div>
-            </div>
-            <button class="add-predefined-macro" data-pattern="\\thm" data-template="\begin{theorem}\n  \n\end{theorem}">Добавить</button>
-          </div>
-          <div class="macro-item">
-            <div class="macro-info">
-              <div class="macro-pattern">\proof</div>
-              <div class="macro-arrow">→</div>
-              <div class="macro-result">\begin{proof}\n  \n\end{proof}</div>
-            </div>
-            <button class="add-predefined-macro" data-pattern="\\proof" data-template="\begin{proof}\n  \n\end{proof}">Добавить</button>
-          </div>
-          <div class="macro-item">
-            <div class="macro-info">
-              <div class="macro-pattern">\defn</div>
-              <div class="macro-arrow">→</div>
-              <div class="macro-result">\begin{definition}\n  \n\end{definition}</div>
-            </div>
-            <button class="add-predefined-macro" data-pattern="\\defn" data-template="\begin{definition}\n  \n\end{definition}">Добавить</button>
-          </div>
-          <div class="macro-item">
-            <div class="macro-info">
-              <div class="macro-pattern">\ex</div>
-              <div class="macro-arrow">→</div>
-              <div class="macro-result">\begin{example}\n  \n\end{example}</div>
-            </div>
-            <button class="add-predefined-macro" data-pattern="\\ex" data-template="\begin{example}\n  \n\end{example}">Добавить</button>
-          </div>
-          <div class="macro-item">
-            <div class="macro-info">
-              <div class="macro-pattern">\align</div>
-              <div class="macro-arrow">→</div>
-              <div class="macro-result">\begin{align}\n  \n\end{align}</div>
-            </div>
-            <button class="add-predefined-macro" data-pattern="\\align" data-template="\begin{align}\n  \n\end{align}">Добавить</button>
-          </div>
-        </div>
-      </div>
-      
-      <!-- Создание пользовательского макроса -->
-      <div class="macro-tab-content" id="create-macro" style="display: none;">
-        <h3>Создать свой макрос</h3>
+      <!-- Простой режим создания макроса -->
+      <div id="simple-macro-creator">
         <div class="form-group">
-          <label for="smart-macro-pattern">Шаблон поиска:</label>
+          <label for="simple-macro-keyword">Ключевое слово или команда:</label>
+          <input type="text" id="simple-macro-keyword" placeholder="Например: \frac или mat3x3">
+          <p class="form-hint">Введите команду, которую вы будете набирать (например: \int_a^b)</p>
+        </div>
+        
+        <div class="form-group">
+          <label>Параметры макроса:</label>
+          <div id="macro-params-container">
+            <div class="macro-param-row" style="display: flex; gap: 10px; margin-bottom: 8px;">
+              <input type="text" class="macro-param-name" placeholder="Имя переменной" style="flex: 1;">
+              <select class="macro-param-type" style="width: 130px;">
+                <option value="text">Любой текст</option>
+                <option value="word">Слово</option>
+                <option value="number">Число</option>
+                <option value="symbol">Символ</option>
+              </select>
+              <button class="remove-param-btn" style="width: 30px;">×</button>
+            </div>
+          </div>
+          <button id="add-param-btn" style="margin-top: 8px;">+ Добавить параметр</button>
+          <p class="form-hint">Определите переменные части вашего макроса, которые будут заменены</p>
+        </div>
+        
+        <div class="form-group">
+          <label for="simple-macro-template">Шаблон замены:</label>
+          <textarea id="simple-macro-template" placeholder="Например: \frac{$1}{$2}" style="height: 80px;"></textarea>
+          <p class="form-hint">Используйте $1, $2, и т.д. для подстановки параметров</p>
+        </div>
+      </div>
+      
+      <!-- Расширенный режим (существующий) -->
+      <div id="advanced-macro-creator" style="display: none;">
+        <div class="form-group">
+          <label for="smart-macro-pattern">Шаблон поиска (регулярное выражение):</label>
           <input type="text" id="smart-macro-pattern" placeholder="Например: ([^\\s/]+)/([^\\s/]+)">
-          <p class="form-hint">Используйте регулярные выражения для определения шаблона.</p>
+          <p class="form-hint">
+            Используйте регулярные выражения для определения шаблона. Группы захвата в круглых скобках () станут переменными.
+          </p>
+          <div class="common-patterns" style="margin-top: 10px;">
+            <p><strong>Полезные регулярные выражения:</strong></p>
+            <div style="display: flex; flex-wrap: wrap; gap: 10px; margin-top: 5px;">
+              <button class="pattern-chip" data-pattern="([^\\s/]+)">Слово без пробелов</button>
+              <button class="pattern-chip" data-pattern="([0-9]+)">Число</button>
+              <button class="pattern-chip" data-pattern="(.+)">Любой текст</button>
+              <button class="pattern-chip" data-pattern="([a-zA-Z]+)">Только буквы</button>
+            </div>
+          </div>
         </div>
         
         <div class="form-group">
@@ -894,18 +723,489 @@ F(x) = \int_{a}^{b} f(x) \, dx
           <input type="text" id="smart-macro-template" placeholder="Например: \frac{$1}{$2}">
           <p class="form-hint">$1, $2, и т.д. будут заменены на соответствующие части шаблона.</p>
         </div>
-        
-        <div class="smart-macro-preview">
-          <span class="smart-macro-preview-before" id="smart-macro-before">a1/b1</span>
-          <span class="smart-macro-preview-arrow">→</span>
-          <span class="smart-macro-preview-after" id="smart-macro-after">\frac{a1}{b1}</span>
+      </div>
+      
+      <!-- Улучшенный предпросмотр -->
+      <div class="form-group" style="margin-top: 20px;">
+        <label>Предпросмотр:</label>
+        <div class="smart-macro-preview" style="background-color: #f0f8ff; padding: 15px; border-radius: 5px;">
+          <div style="display: flex; flex-direction: column; gap: 10px; width: 100%;">
+            <div>
+              <label>Ввод пользователя:</label>
+              <div style="background-color: #fff; padding: 8px; border-radius: 4px; font-family: monospace;" id="smart-macro-before">a1/b1</div>
+            </div>
+            <div style="text-align: center; margin: 5px 0;">
+              <span style="font-size: 24px; color: #3498db;">↓</span>
+              <span style="margin-left: 10px; color: #666;">Нажатие Tab</span>
+            </div>
+            <div>
+              <label>Преобразуется в:</label>
+              <div style="background-color: #e8f4fc; padding: 8px; border-radius: 4px; font-family: monospace;" id="smart-macro-after">\frac{a1}{b1}</div>
+            </div>
+          </div>
         </div>
-        
+      </div>
+      
+      <div style="margin-top: 15px; display: flex; gap: 10px;">
+        <button id="test-macro-btn" class="primary-btn">Протестировать</button>
         <button id="add-smart-macro-btn" class="primary-btn">Добавить умный макрос</button>
+      </div>
+      
+      <!-- Блок с примерами -->
+      <div style="margin-top: 25px; border-top: 1px solid #ddd; padding-top: 15px;">
+        <h4>Примеры полезных макросов:</h4>
+        <div style="display: flex; flex-wrap: wrap; gap: 15px;">
+          <div style="background-color: #f5f5f5; padding: 10px; border-radius: 5px; width: calc(50% - 8px);">
+            <strong>Дробь:</strong> a/b → \frac{a}{b}
+          </div>
+          <div style="background-color: #f5f5f5; padding: 10px; border-radius: 5px; width: calc(50% - 8px);">
+            <strong>Верхний индекс:</strong> x^n → x^{n}
+          </div>
+          <div style="background-color: #f5f5f5; padding: 10px; border-radius: 5px; width: calc(50% - 8px);">
+            <strong>Матрица 2x2:</strong> \mat2x2 → \begin{pmatrix} a & b \\ c & d \end{pmatrix}
+          </div>
+          <div style="background-color: #f5f5f5; padding: 10px; border-radius: 5px; width: calc(50% - 8px);">
+            <strong>Жирный текст:</strong> \bf текст → \textbf{текст}
+          </div>
+        </div>
       </div>
     </div>
   </div>
+</div>
+
+<style>
+  .pattern-chip {
+    background-color: #e0e0e0;
+    border: none;
+    border-radius: 16px;
+    padding: 5px 10px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+  }
   
+  .pattern-chip:hover {
+    background-color: #d0d0d0;
+  }
+  
+  .macro-param-row {
+    animation: fadeIn 0.3s;
+  }
+  
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  
+  .test-input {
+    margin-top: 10px;
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+  }
+</style>
+
+<script>
+  // Этот скрипт будет добавлен в существующий HTML
+  
+  document.addEventListener('DOMContentLoaded', function() {
+    // Функция для поддержки переключения между упрощенным и расширенным режимами
+    const advancedModeToggle = document.getElementById('advanced-mode-toggle');
+    const simpleMacroCreator = document.getElementById('simple-macro-creator');
+    const advancedMacroCreator = document.getElementById('advanced-macro-creator');
+    
+    if (advancedModeToggle) {
+      advancedModeToggle.addEventListener('change', function() {
+        if (this.checked) {
+          simpleMacroCreator.style.display = 'none';
+          advancedMacroCreator.style.display = 'block';
+          // Синхронизация полей при переключении
+          syncSimpleToAdvanced();
+        } else {
+          simpleMacroCreator.style.display = 'block';
+          advancedMacroCreator.style.display = 'none';
+          // Попытка синхронизации в обратную сторону
+          try {
+            syncAdvancedToSimple();
+          } catch (e) {
+            console.warn('Невозможно преобразовать регулярное выражение в простой формат:', e);
+          }
+        }
+      });
+    }
+    
+    // Синхронизация данных между режимами
+    function syncSimpleToAdvanced() {
+      const keyword = document.getElementById('simple-macro-keyword').value.trim();
+      const template = document.getElementById('simple-macro-template').value.trim();
+      
+      if (!keyword) return;
+      
+      // Экранирование спецсимволов регулярных выражений
+      const escapedKeyword = keyword.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+      
+      // Сбор параметров
+      const params = [];
+      document.querySelectorAll('.macro-param-row').forEach(row => {
+        const paramName = row.querySelector('.macro-param-name').value.trim();
+        const paramType = row.querySelector('.macro-param-type').value;
+        
+        if (paramName) {
+          let paramPattern;
+          switch(paramType) {
+            case 'text':
+              paramPattern = '(.+)';
+              break;
+            case 'word':
+              paramPattern = '([^\\s]+)';
+              break;
+            case 'number':
+              paramPattern = '([0-9]+)';
+              break;
+            case 'symbol':
+              paramPattern = '(.)';
+              break;
+            default:
+              paramPattern = '(.+)';
+          }
+          params.push({name: paramName, pattern: paramPattern});
+        }
+      });
+      
+      // Если есть ключевое слово и параметры, строим регулярное выражение
+      if (params.length > 0) {
+        let pattern = escapedKeyword;
+        
+        // Добавляем пробел между ключевым словом и первым параметром, если ключевое слово не пустое
+        if (keyword) {
+          pattern += '\\s+';
+        }
+        
+        // Добавляем шаблоны для параметров
+        pattern += params.map(p => p.pattern).join('\\s+');
+        
+        document.getElementById('smart-macro-pattern').value = pattern;
+      } else {
+        // Если нет параметров, просто используем ключевое слово
+        document.getElementById('smart-macro-pattern').value = escapedKeyword;
+      }
+      
+      document.getElementById('smart-macro-template').value = template;
+    }
+    
+    // Попытка обратной синхронизации (сложнее и не всегда возможна)
+    function syncAdvancedToSimple() {
+      const pattern = document.getElementById('smart-macro-pattern').value.trim();
+      const template = document.getElementById('smart-macro-template').value.trim();
+      
+      // Очищаем параметры
+      const container = document.getElementById('macro-params-container');
+      container.innerHTML = '';
+      
+      // Пытаемся выделить ключевое слово и параметры
+      // Это упрощённая логика, которая работает только с базовыми шаблонами
+      const keywordMatch = pattern.match(/^([^(]+?)\\s\+/);
+      if (keywordMatch) {
+        let keyword = keywordMatch[1].replace(/\\(.)/g, '$1');  // Убираем экранирование
+        document.getElementById('simple-macro-keyword').value = keyword;
+      } else {
+        document.getElementById('simple-macro-keyword').value = '';
+      }
+      
+      // Находим все группы захвата
+      const paramMatches = pattern.match(/\(.*?\)/g);
+      if (paramMatches) {
+        paramMatches.forEach((match, index) => {
+          addParameterRow();
+          const rows = document.querySelectorAll('.macro-param-row');
+          const lastRow = rows[rows.length - 1];
+          
+          if (lastRow) {
+            lastRow.querySelector('.macro-param-name').value = `param${index + 1}`;
+            
+            // Определяем тип параметра по шаблону
+            const paramType = lastRow.querySelector('.macro-param-type');
+            if (match.includes('[^\\s]+')) {
+              paramType.value = 'word';
+            } else if (match.includes('[0-9]+')) {
+              paramType.value = 'number';
+            } else if (match === '(.)') {
+              paramType.value = 'symbol';
+            } else {
+              paramType.value = 'text';
+            }
+          }
+        });
+      }
+      
+      document.getElementById('simple-macro-template').value = template;
+    }
+    
+    // Обработчик добавления нового параметра
+    const addParamBtn = document.getElementById('add-param-btn');
+    if (addParamBtn) {
+      addParamBtn.addEventListener('click', addParameterRow);
+    }
+    
+    function addParameterRow() {
+      const container = document.getElementById('macro-params-container');
+      const newRow = document.createElement('div');
+      newRow.className = 'macro-param-row';
+      newRow.style.display = 'flex';
+      newRow.style.gap = '10px';
+      newRow.style.marginBottom = '8px';
+      
+      newRow.innerHTML = `
+        <input type="text" class="macro-param-name" placeholder="Имя переменной" style="flex: 1;">
+        <select class="macro-param-type" style="width: 130px;">
+          <option value="text">Любой текст</option>
+          <option value="word">Слово</option>
+          <option value="number">Число</option>
+          <option value="symbol">Символ</option>
+        </select>
+        <button class="remove-param-btn" style="width: 30px;">×</button>
+      `;
+      
+      container.appendChild(newRow);
+      
+      // Добавляем обработчик для кнопки удаления
+      newRow.querySelector('.remove-param-btn').addEventListener('click', function() {
+        container.removeChild(newRow);
+        updateSimpleMacroPreview();
+      });
+      
+      // Добавляем обработчики для ввода для живого предпросмотра
+      newRow.querySelector('.macro-param-name').addEventListener('input', updateSimpleMacroPreview);
+      newRow.querySelector('.macro-param-type').addEventListener('change', updateSimpleMacroPreview);
+      
+      return newRow;
+    }
+    
+    // Добавляем обработчики для полей ввода для живого предпросмотра
+    document.getElementById('simple-macro-keyword')?.addEventListener('input', updateSimpleMacroPreview);
+    document.getElementById('simple-macro-template')?.addEventListener('input', updateSimpleMacroPreview);
+    
+    // Обновить предпросмотр для упрощенного режима
+    function updateSimpleMacroPreview() {
+      const keyword = document.getElementById('simple-macro-keyword').value.trim();
+      const template = document.getElementById('simple-macro-template').value.trim();
+      
+      // Сбор параметров
+      const params = [];
+      document.querySelectorAll('.macro-param-row').forEach(row => {
+        const paramName = row.querySelector('.macro-param-name').value.trim();
+        const paramType = row.querySelector('.macro-param-type').value;
+        
+        if (paramName) {
+          let exampleValue;
+          switch(paramType) {
+            case 'text':
+              exampleValue = 'текст';
+              break;
+            case 'word':
+              exampleValue = 'слово';
+              break;
+            case 'number':
+              exampleValue = '123';
+              break;
+            case 'symbol':
+              exampleValue = 'x';
+              break;
+            default:
+              exampleValue = 'значение';
+          }
+          params.push({name: paramName, value: exampleValue, index: params.length + 1});
+        }
+      });
+      
+      // Создаем пример ввода
+      let exampleBefore = keyword;
+      if (params.length > 0) {
+        if (keyword) exampleBefore += ' ';
+        exampleBefore += params.map(p => p.value).join(' ');
+      }
+      
+      // Создаем пример вывода
+      let exampleAfter = template;
+      params.forEach(p => {
+        exampleAfter = exampleAfter.replace(new RegExp('\\$' + p.index, 'g'), p.value);
+      });
+      
+      // Обновляем элементы предпросмотра
+      document.getElementById('smart-macro-before').textContent = exampleBefore;
+      document.getElementById('smart-macro-after').textContent = exampleAfter;
+      
+      // Синхронизируем с расширенным режимом
+      if (!document.getElementById('advanced-mode-toggle').checked) {
+        syncSimpleToAdvanced();
+      }
+    }
+    
+    // Обработчики для чипов с регулярными выражениями
+    document.querySelectorAll('.pattern-chip').forEach(chip => {
+      chip.addEventListener('click', function() {
+        const pattern = this.getAttribute('data-pattern');
+        const input = document.getElementById('smart-macro-pattern');
+        const currentPosition = input.selectionStart;
+        
+        // Вставляем шаблон в текущую позицию курсора
+        const currentValue = input.value;
+        input.value = currentValue.substring(0, currentPosition) + pattern + currentValue.substring(currentPosition);
+        
+        // Обновляем предпросмотр
+        updateAdvancedMacroPreview();
+        
+        // Устанавливаем фокус и позицию курсора после вставленного шаблона
+        input.focus();
+        const newPosition = currentPosition + pattern.length;
+        input.setSelectionRange(newPosition, newPosition);
+      });
+    });
+    
+    // Обновление предпросмотра для расширенного режима
+    function updateAdvancedMacroPreview() {
+      const pattern = document.getElementById('smart-macro-pattern').value;
+      const template = document.getElementById('smart-macro-template').value;
+      
+      if (!pattern || !template) return;
+      
+      try {
+        // Упрощаем шаблон для предпросмотра
+        let exampleBefore = pattern
+          .replace(/\\\\/g, '\\')
+          .replace(/\(\[\^\\\\s\/\]\+\)/g, 'значение1')
+          .replace(/\(\[\^\\\\s\^\]\+\)/g, 'значение1')
+          .replace(/\(\.\*\)/g, 'текст')
+          .replace(/\(\.\+\)/g, 'текст')
+          .replace(/\(\[0-9\]\+\)/g, '123')
+          .replace(/\(\[a-zA-Z\]\+\)/g, 'слово')
+          .replace(/\(\.\)/g, 'x')
+          .replace(/\\\s\+/g, ' ');
+          
+        // Удаляем экранирующие обратные слеши для лучшей читаемости
+        exampleBefore = exampleBefore.replace(/\\([^\s])/g, '$1');
+        
+        // Очищаем от оставшихся скобок и групп захвата для удобочитаемости
+        exampleBefore = exampleBefore.replace(/\([^)]*\)/g, 'значение');
+        
+        // Экземпляр вывода
+        let exampleAfter = template
+          .replace(/\$1/g, 'значение1')
+          .replace(/\$2/g, 'значение2')
+          .replace(/\$3/g, 'значение3');
+        
+        document.getElementById('smart-macro-before').textContent = exampleBefore;
+        document.getElementById('smart-macro-after').textContent = exampleAfter;
+      } catch(e) {
+        console.error('Ошибка при обновлении предпросмотра:', e);
+      }
+    }
+    
+    // Обработчики для полей расширенного режима
+    document.getElementById('smart-macro-pattern')?.addEventListener('input', updateAdvancedMacroPreview);
+    document.getElementById('smart-macro-template')?.addEventListener('input', updateAdvancedMacroPreview);
+    
+    // Кнопка тестирования макроса
+    const testMacroBtn = document.getElementById('test-macro-btn');
+    if (testMacroBtn) {
+      testMacroBtn.addEventListener('click', function() {
+        // Получаем текущий шаблон
+        let pattern, template;
+        
+        if (document.getElementById('advanced-mode-toggle').checked) {
+          // Расширенный режим
+          pattern = document.getElementById('smart-macro-pattern').value.trim();
+          template = document.getElementById('smart-macro-template').value.trim();
+        } else {
+          // Упрощенный режим
+          syncSimpleToAdvanced();
+          pattern = document.getElementById('smart-macro-pattern').value.trim();
+          template = document.getElementById('smart-macro-template').value.trim();
+        }
+        
+        if (!pattern || !template) {
+          alert('Заполните все необходимые поля макроса');
+          return;
+        }
+        
+        // Создаем поле для ввода тестового текста
+        let testInput = document.querySelector('.test-input');
+        if (!testInput) {
+          testInput = document.createElement('input');
+          testInput.className = 'test-input';
+          testInput.placeholder = 'Введите тестовый текст для проверки макроса';
+          
+          // Вставляем перед блоком предпросмотра
+          const previewBlock = document.querySelector('.smart-macro-preview').parentNode;
+          previewBlock.insertBefore(testInput, previewBlock.firstChild);
+        }
+        
+        // Функция для тестирования макроса
+        function testMacro() {
+          const inputText = testInput.value.trim();
+          if (!inputText) return;
+          
+          try {
+            const regex = new RegExp(pattern);
+            const match = inputText.match(regex);
+            
+            if (match) {
+              // Создаем замену
+              let replacement = template;
+              for (let i = 1; i < match.length; i++) {
+                replacement = replacement.replace(new RegExp('\\$' + i, 'g'), match[i] || '');
+              }
+              
+              // Показываем результат
+              document.getElementById('smart-macro-before').textContent = inputText;
+              document.getElementById('smart-macro-after').textContent = replacement;
+              
+              // Подсвечиваем поле зеленым на короткое время, показывая успех
+              testInput.style.transition = 'background-color 0.3s';
+              testInput.style.backgroundColor = '#d4edda';
+              setTimeout(() => {
+                testInput.style.backgroundColor = '';
+              }, 1000);
+            } else {
+              // Если совпадений нет, показываем предупреждение
+              document.getElementById('smart-macro-before').textContent = inputText;
+              document.getElementById('smart-macro-after').textContent = 'Нет совпадений с шаблоном';
+              
+              // Подсвечиваем поле розовым на короткое время
+              testInput.style.transition = 'background-color 0.3s';
+              testInput.style.backgroundColor = '#f8d7da';
+              setTimeout(() => {
+                testInput.style.backgroundColor = '';
+              }, 1000);
+            }
+          } catch (e) {
+            alert('Ошибка в регулярном выражении: ' + e.message);
+            console.error('Ошибка при тестировании макроса:', e);
+          }
+        }
+        
+        // Привязываем событие ввода к тестированию
+        testInput.addEventListener('input', testMacro);
+        
+        // Устанавливаем начальное значение, подходящее для текущего макроса
+        let defaultValue = document.getElementById('smart-macro-before').textContent;
+        testInput.value = defaultValue;
+        testInput.focus();
+        testMacro();
+      });
+    }
+    
+    // При загрузке страницы добавляем один пустой параметр, если их еще нет
+    if (document.getElementById('macro-params-container') && 
+        document.getElementById('macro-params-container').children.length === 0) {
+      addParameterRow();
+    }
+    
+    // Инициализируем предпросмотр при загрузке
+    updateSimpleMacroPreview();
+  });
+</script>
   <!-- Модальное окно для настроек -->
   <div id="settings-modal" class="modal">
     <div class="modal-content">
