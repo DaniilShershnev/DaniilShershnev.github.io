@@ -434,15 +434,42 @@ function macroExists(pattern) {
  */
 function setupSmartMacrosEvents() {
   // Открытие модального окна
-  document.getElementById('smart-macros-btn').addEventListener('click', function() {
-    const modal = document.getElementById('smart-macros-modal');
-    if (modal) {
-      modal.style.display = 'block';
-      switchTab('user-macros');
-      setupPredefinedMacros();
-      setupTabSwitching();
-      addExportImportButtons();
-    }
+  const smartMacrosBtn = document.getElementById('smart-macros-btn');
+  if (smartMacrosBtn) {
+    smartMacrosBtn.addEventListener('click', function() {
+      const modal = document.getElementById('smart-macros-modal');
+      if (modal) {
+        modal.style.display = 'block';
+        switchTab('user-macros');
+        setupPredefinedMacros();
+        setupTabSwitching();
+        addExportImportButtons();
+      }
+    });
+  }
+  
+  // Обработчики для полей создания умных макросов
+  const patternField = document.getElementById('smart-macro-pattern');
+  if (patternField) {
+    patternField.addEventListener('input', updateSmartMacroPreview);
+  }
+  
+  const templateField = document.getElementById('smart-macro-template');
+  if (templateField) {
+    templateField.addEventListener('input', updateSmartMacroPreview);
+  }
+  
+  // Кнопка добавления пользовательского макроса
+  const addMacroBtn = document.getElementById('add-smart-macro-btn');
+  if (addMacroBtn) {
+    addMacroBtn.addEventListener('click', function() {
+      const pattern = document.getElementById('smart-macro-pattern').value.trim();
+      const template = document.getElementById('smart-macro-template').value.trim();
+      
+      // Остальной код...
+    });
+  }
+}
   });
   
   // Обработчики для полей создания умных макросов
