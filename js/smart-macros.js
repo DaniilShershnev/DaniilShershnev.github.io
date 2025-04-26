@@ -466,62 +466,48 @@ function setupSmartMacrosEvents() {
       const pattern = document.getElementById('smart-macro-pattern').value.trim();
       const template = document.getElementById('smart-macro-template').value.trim();
       
-      // Остальной код...
-    });
-  }
-}
-  });
-  
-  // Обработчики для полей создания умных макросов
-  document.getElementById('smart-macro-pattern').addEventListener('input', updateSmartMacroPreview);
-  document.getElementById('smart-macro-template').addEventListener('input', updateSmartMacroPreview);
-  
-  // Кнопка добавления пользовательского макроса
-  document.getElementById('add-smart-macro-btn').addEventListener('click', function() {
-    const pattern = document.getElementById('smart-macro-pattern').value.trim();
-    const template = document.getElementById('smart-macro-template').value.trim();
-    
-    if (!pattern || !template) {
-      alert('Пожалуйста, заполните оба поля.');
-      return;
-    }
-    
-    // Проверка валидности регулярного выражения
-    try {
-      new RegExp(pattern);
-    } catch (e) {
-      alert('Ошибка в шаблоне. Пожалуйста, проверьте корректность регулярного выражения.');
-      return;
-    }
-    
-    // Проверяем, не существует ли уже такой макрос
-    const existingMacroIndex = smartMacros.findIndex(macro => macro.pattern === pattern);
-    if (existingMacroIndex >= 0) {
-      if (confirm('Макрос с таким шаблоном уже существует. Хотите заменить его?')) {
-        smartMacros[existingMacroIndex].template = template;
-      } else {
+      if (!pattern || !template) {
+        alert('Пожалуйста, заполните оба поля.');
         return;
       }
-    } else {
-      // Добавляем новый умный макрос
-      smartMacros.push({
-        pattern: pattern,
-        template: template
-      });
-    }
-    
-    // Сохраняем в localStorage
-    localStorage.setItem('latex-smart-macros', JSON.stringify(smartMacros));
-    
-    // Очищаем поля формы
-    document.getElementById('smart-macro-pattern').value = '';
-    document.getElementById('smart-macro-template').value = '';
-    
-    // Обновляем список и переключаемся на вкладку пользовательских макросов
-    updateSmartMacrosList();
-    switchTab('user-macros');
-    
-    // Уведомляем пользователя
-    updateStatus('Умный макрос добавлен', 3000);
-  });
+      
+      // Проверка валидности регулярного выражения
+      try {
+        new RegExp(pattern);
+      } catch (e) {
+        alert('Ошибка в шаблоне. Пожалуйста, проверьте корректность регулярного выражения.');
+        return;
+      }
+      
+      // Проверяем, не существует ли уже такой макрос
+      const existingMacroIndex = smartMacros.findIndex(macro => macro.pattern === pattern);
+      if (existingMacroIndex >= 0) {
+        if (confirm('Макрос с таким шаблоном уже существует. Хотите заменить его?')) {
+          smartMacros[existingMacroIndex].template = template;
+        } else {
+          return;
+        }
+      } else {
+        // Добавляем новый умный макрос
+        smartMacros.push({
+          pattern: pattern,
+          template: template
+        });
+      }
+      
+      // Сохраняем в localStorage
+      localStorage.setItem('latex-smart-macros', JSON.stringify(smartMacros));
+      
+      // Очищаем поля формы
+      document.getElementById('smart-macro-pattern').value = '';
+      document.getElementById('smart-macro-template').value = '';
+      
+      // Обновляем список и переключаемся на вкладку пользовательских макросов
+      updateSmartMacrosList();
+      switchTab('user-macros');
+      
+      // Уведомляем пользователя
+      updateStatus('Умный макрос добавлен', 3000);
+    });
+  }
 }
