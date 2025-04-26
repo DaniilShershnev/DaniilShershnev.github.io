@@ -1,0 +1,531 @@
+/* Общие стили */
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  margin: 0;
+  padding: 0;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Заголовок */
+header {
+  background-color: #2c3e50;
+  color: white;
+  padding: 8px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+header h1 {
+  font-size: 18px;
+  font-weight: 500;
+  margin: 0;
+}
+
+.header-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+/* Кнопки */
+button {
+  background-color: white;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  padding: 4px 10px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.2s;
+}
+
+button:hover {
+  background-color: #3498db;
+  color: white;
+}
+
+button.active {
+  background-color: #3498db;
+  color: white;
+}
+
+/* Главный контейнер */
+main {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* Панель редактора */
+.editor-pane {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid #ddd;
+}
+
+/* Панель предпросмотра */
+.preview-pane {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Панель инструментов */
+.toolbar {
+  background-color: #f5f5f5;
+  padding: 4px;
+  border-bottom: 1px solid #ddd;
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+/* Контейнер редактора */
+.editor-container {
+  flex: 1;
+  overflow: hidden;
+  position: relative;
+}
+
+.CodeMirror {
+  height: 100%;
+  font-size: 14px;
+}
+
+/* Контейнер предпросмотра */
+.preview-container {
+  flex: 1;
+  overflow: auto;
+  background-color: #f5f5f5;
+  padding: 16px;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+}
+
+#pdf-preview {
+  background-color: white;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  padding: 40px;
+  width: 210mm;
+  min-height: 297mm;
+  box-sizing: border-box;
+  margin: 20px;
+  transform-origin: top center;
+}
+
+/* Индикатор загрузки */
+.loading-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(255, 255, 255, 0.8);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 100;
+  display: none;
+}
+
+.spinner {
+  border: 4px solid rgba(0, 0, 0, 0.1);
+  border-radius: 50%;
+  border-top: 4px solid #3498db;
+  width: 30px;
+  height: 30px;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Строка статуса */
+.status-bar {
+  background-color: #2c3e50;
+  color: white;
+  padding: 4px 12px;
+  font-size: 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* Модальные окна */
+.modal {
+  display: none;
+  position: fixed;
+  z-index: 200;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  background-color: rgba(0, 0, 0, 0.5);
+}
+
+.modal-content {
+  background-color: white;
+  margin: 10% auto;
+  padding: 20px;
+  border-radius: 5px;
+  width: 50%;
+  max-width: 500px;
+}
+
+.close {
+  color: #aaa;
+  float: right;
+  font-size: 28px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.close:hover {
+  color: black;
+}
+
+/* Формы */
+.form-group {
+  margin-bottom: 15px;
+}
+
+label {
+  display: block;
+  margin-bottom: 5px;
+}
+
+input[type="text"], textarea, select {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-family: inherit;
+  font-size: inherit;
+}
+
+/* PDF стили */
+.pdf-title {
+  font-size: 24px;
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.pdf-author {
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+.pdf-date {
+  text-align: center;
+  margin-bottom: 50px;
+}
+
+.pdf-section {
+  font-size: 18px;
+  font-weight: bold;
+  margin-top: 20px;
+  margin-bottom: 10px;
+}
+
+.pdf-paragraph {
+  margin-bottom: 10px;
+  text-align: justify;
+}
+
+.pdf-equation {
+  margin: 15px 0;
+  text-align: center;
+}
+
+.pdf-list {
+  margin-left: 20px;
+}
+
+/* Стили для умных макросов */
+.smart-macro-example {
+  background-color: #f8f9fa;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  padding: 8px 12px;
+  margin-top: 8px;
+  font-family: monospace;
+}
+
+.smart-macro-preview {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: #f0f8ff;
+  padding: 8px;
+  border-radius: 4px;
+  margin-top: 10px;
+}
+
+.smart-macro-preview-before {
+  color: #555;
+  font-family: monospace;
+}
+
+.smart-macro-preview-arrow {
+  font-size: 20px;
+  color: #3498db;
+  margin: 0 10px;
+}
+
+.smart-macro-preview-after {
+  color: #2c3e50;
+  font-family: monospace;
+}
+
+/* Стили для файлового менеджера */
+.file-list {
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  max-height: 200px;
+  overflow-y: auto;
+  margin-top: 10px;
+}
+
+.file-item {
+  padding: 8px;
+  border-bottom: 1px solid #ddd;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+}
+
+.file-item:last-child {
+  border-bottom: none;
+}
+
+.file-item:hover {
+  background-color: #f0f0f0;
+}
+
+.file-item.active {
+  background-color: #e3f2fd;
+}
+
+.file-actions {
+  display: flex;
+  gap: 5px;
+}
+
+/* Настройки */
+.settings-group {
+  margin-bottom: 15px;
+}
+
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 40px;
+  height: 20px;
+  margin-right: 10px;
+}
+
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #ccc;
+  transition: .4s;
+  border-radius: 20px;
+}
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 16px;
+  width: 16px;
+  left: 2px;
+  bottom: 2px;
+  background-color: white;
+  transition: .4s;
+  border-radius: 50%;
+}
+
+input:checked + .slider {
+  background-color: #2196F3;
+}
+
+input:checked + .slider:before {
+  transform: translateX(20px);
+}
+
+.settings-row {
+  display: flex;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.autosave-indicator {
+  margin-left: 10px;
+  font-size: 12px;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.autosave-indicator.show {
+  opacity: 1;
+}
+
+/* Стили для вкладок в модальном окне */
+.macro-tabs {
+  display: flex;
+  border-bottom: 1px solid #ddd;
+  margin-bottom: 15px;
+  overflow-x: auto;
+}
+
+.macro-tab-btn {
+  background-color: #f8f8f8;
+  border: 1px solid #ddd;
+  border-bottom: none;
+  padding: 8px 15px;
+  margin-right: 5px;
+  border-top-left-radius: 4px;
+  border-top-right-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+.macro-tab-btn.active {
+  background-color: #fff;
+  border-bottom: 1px solid #fff;
+  margin-bottom: -1px;
+  font-weight: bold;
+}
+
+.macro-tab-content {
+  margin-top: 20px;
+}
+
+/* Стили для списка макросов */
+.macros-list {
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.empty-list-message {
+  color: #777;
+  font-style: italic;
+  text-align: center;
+  padding: 20px;
+}
+
+.macro-item {
+  padding: 10px;
+  border-bottom: 1px solid #ddd;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.macro-item:last-child {
+  border-bottom: none;
+}
+
+.macro-info {
+  display: flex;
+  align-items: center;
+  flex: 1;
+}
+
+.macro-pattern {
+  background-color: #f5f5f5;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-family: monospace;
+  margin-right: 10px;
+}
+
+.macro-arrow {
+  color: #3498db;
+  margin: 0 10px;
+}
+
+.macro-result {
+  font-family: monospace;
+  color: #2c3e50;
+  background-color: #e8f4fc;
+  padding: 4px 8px;
+  border-radius: 4px;
+  word-break: break-all;
+}
+
+.predefined-macros .macro-item {
+  border-bottom: 1px solid #eaeaea;
+}
+
+.predefined-macros .macro-pattern {
+  min-width: 110px;
+}
+
+/* Кнопки и формы */
+.form-hint {
+  font-size: 12px;
+  color: #666;
+  margin-top: 5px;
+}
+
+.primary-btn {
+  background-color: #3498db;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 8px 15px;
+  font-size: 14px;
+  cursor: pointer;
+  margin-top: 15px;
+}
+
+.primary-btn:hover {
+  background-color: #2980b9;
+}
+
+/* Анимация применения макроса */
+.macro-applied-marker {
+  position: absolute;
+  background-color: rgba(52, 152, 219, 0.2);
+  border-radius: 2px;
+  transition: opacity 1s;
+  pointer-events: none;
+}
+
+/* Адаптивный дизайн */
+@media (max-width: 768px) {
+  main {
+    flex-direction: column;
+  }
+  
+  .editor-pane, .preview-pane {
+    flex: 1 0 50%;
+    border-right: none;
+    border-bottom: 1px solid #ddd;
+  }
+  
+  .modal-content {
+    width: 90%;
+  }
+}
