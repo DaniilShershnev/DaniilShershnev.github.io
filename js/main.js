@@ -15,7 +15,11 @@ document.addEventListener('DOMContentLoaded', function() {
   loadSmartMacros();
   
   // Инициализируем редактор рисования
-  initDrawingEditor();
+  if (typeof initDrawingEditor === 'function') {
+    initDrawingEditor();
+  } else {
+    console.warn('Функция initDrawingEditor не определена');
+  }
   
   // Устанавливаем обработчики событий для элементов интерфейса
   setupUIEventHandlers();
@@ -24,7 +28,13 @@ document.addEventListener('DOMContentLoaded', function() {
   loadInitialDocument();
   
   // Компилируем при первой загрузке
-  setTimeout(compileLatex, 500);
+  setTimeout(() => {
+    if (typeof compileLatex === 'function') {
+      compileLatex();
+    } else {
+      console.error('Функция compileLatex не определена');
+    }
+  }, 500);
 });
 
 /**
@@ -32,22 +42,42 @@ document.addEventListener('DOMContentLoaded', function() {
  */
 function setupUIEventHandlers() {
   // Установка обработчиков для панели инструментов
-  setupToolbarButtons();
+  if (typeof setupToolbarButtons === 'function') {
+    setupToolbarButtons();
+  } else {
+    console.warn('Функция setupToolbarButtons не определена');
+  }
   
   // Установка обработчиков для модальных окон
   setupModalEvents();
   
   // Установка обработчиков для файлового менеджера
-  setupFileManagerEvents();
+  if (typeof setupFileManagerEvents === 'function') {
+    setupFileManagerEvents();
+  } else {
+    console.warn('Функция setupFileManagerEvents не определена');
+  }
   
   // Установка обработчиков для умных макросов
-  setupSmartMacrosEvents();
+  if (typeof setupSmartMacrosEvents === 'function') {
+    setupSmartMacrosEvents();
+  } else {
+    console.warn('Функция setupSmartMacrosEvents не определена');
+  }
   
   // Установка обработчиков для настроек
-  setupSettingsEvents();
+  if (typeof setupSettingsEvents === 'function') {
+    setupSettingsEvents();
+  } else {
+    console.warn('Функция setupSettingsEvents не определена');
+  }
   
   // Установка обработчиков для предпросмотра
-  setupPreviewEvents();
+  if (typeof setupPreviewEvents === 'function') {
+    setupPreviewEvents();
+  } else {
+    console.warn('Функция setupPreviewEvents не определена');
+  }
 }
 
 /**
