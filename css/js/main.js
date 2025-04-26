@@ -14,6 +14,9 @@ document.addEventListener('DOMContentLoaded', function() {
   // Загружаем умные макросы
   loadSmartMacros();
   
+  // Инициализируем редактор рисования
+  initDrawingEditor();
+  
   // Устанавливаем обработчики событий для элементов интерфейса
   setupUIEventHandlers();
   
