@@ -627,6 +627,38 @@ input[type="file"] {
   background-color: #f9f9f9;
   width: 100%;
 }
+  /* Добавьте эти стили в файл css/styles.css */
+
+/* Стили для TikZ-контейнеров */
+.tikz-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 15px auto;
+  max-width: 100%;
+}
+
+/* Стили для канвы TikZ-рисунка */
+.tikz-container canvas {
+  background-color: white;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+  max-width: 100%;
+}
+
+/* Стили для подписи TikZ-рисунка */
+.tikz-caption {
+  margin-top: 8px;
+  font-style: italic;
+  color: #555;
+  font-size: 0.9em;
+  text-align: center;
+}
+
+/* Специальные стили для документов с TikZ-рисунками */
+.has-tikz-pictures .pdf-figure {
+  margin: 20px 0;
+  text-align: center;
+}
 
 /* Улучшение списка загруженных изображений */
 .file-item {
