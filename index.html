@@ -18,6 +18,7 @@
   
   <!-- Подключаем наши стили и скрипты -->
   <link rel="stylesheet" href="css/styles.css">
+  <link rel="stylesheet" href="css/drawing-styles.css">
   
 </head>
 <body>
@@ -42,6 +43,7 @@
         <button data-insert="\subsection{}">Подраздел</button>
         <button data-insert="\begin{equation}\n\n\end{equation}">Уравнение</button>
         <button data-insert="\begin{figure}\n\centering\n\includegraphics[width=0.8\textwidth]{}\n\caption{}\n\label{fig:}\n\end{figure}">Рисунок</button>
+        <button id="drawing-btn" title="Редактор рисования">Нарисовать</button>
         <button data-insert="\begin{table}\n\centering\n\begin{tabular}{|c|c|}\n\hline\n & \\\\ \n\hline\n & \\\\ \n\hline\n\end{tabular}\n\caption{}\n\label{tab:}\n\end{table}">Таблица</button>
         <button data-insert="\begin{itemize}\n\item \n\item \n\end{itemize}">Список</button>
         <button data-insert="\begin{enumerate}\n\item \n\item \n\end{enumerate}">Нумер. список</button>
@@ -296,10 +298,15 @@ F(x) = \int_{a}^{b} f(x) \, dx
 
   <!-- Подключаем JS-модули -->
   <script src="css/js/editor.js"></script>
-<script src="css/js/file-manager.js"></script>
-<script src="css/js/smart-macros.js"></script>
-<script src="css/js/settings.js"></script>
-<script src="css/js/preview.js"></script>
-<script src="css/js/main.js"></script>
+  <script src="css/js/file-manager.js"></script>
+  <script src="css/js/smart-macros.js"></script>
+  <script src="css/js/settings.js"></script>
+  <script src="css/js/preview.js"></script>
+  <script src="css/js/drawing-canvas.js"></script>
+  <script src="css/js/drawing-tools.js"></script>
+  <script src="css/js/drawing-tikz-converter.js"></script>
+  <script src="css/js/drawing-ui.js"></script>
+  <script src="css/js/drawing-editor.js"></script>
+  <script src="css/js/main.js"></script>
 </body>
 </html>
