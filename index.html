@@ -1,448 +1,220 @@
-// Модальные окна - открытие и закрытие
-      document.querySelectorAll('.modal .close').forEach(function(closeBtn) {
-        closeBtn.addEventListener('click', function() {
-          this.closest('.modal').style.display = 'none';
-        });
-      });
-      
-      window.addEventListener('click', function(event) {
-        document.querySelectorAll('.modal').forEach(modal => {
-          if (event.target === modal) {
-            modal.style.display = 'none';
-          }
-        });
-      });
-      
-      // Открытие модальных окон
-      document.getElementById('settings-btn').addEventListener('click', function() {
-        document.getElementById('settings-modal').style.display = 'block';
-      });
-      
-      document.getElementById('files-btn').addEventListener('click', function() {
-        document.getElementById('files-modal').style.display = 'block';
-        loadFilesList();
-      });
-      
-      document.getElementById('smart-macros-btn').addEventListener('click', function() {
-        document.getElementById('smart-macros-modal').style.display = 'block';
-      });
-      
-      // Обработчик для редактора рисования
-      document.getElementById('drawing-btn').addEventListener('click', function() {
-        alert('Редактор рисования загружается...');
-        // В полной версии здесь будет открытие редактора рисования
-      });
-    }
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LaTeX Онлайн-редактор</title>
     
-    // Функция для компиляции LaTeX
-    function compileLatex() {
-      const latexCode = editor.getValue();
-      
-      // Показываем индикатор загрузки
-      const loadingOverlay = document.querySelector('.loading-overlay');
-      const statusElement = document.getElementById('status');
-      
-      if (loadingOverlay) {
-        loadingOverlay.style.display = 'flex';
-      }
-      
-      if (statusElement) {
-        statusElement.textContent = "Компиляция...";
-      }
-      
-      // Имитация процесса компиляции с задержкой (для демонстрации)
-      setTimeout(() => {
-        try {
-          // Парсинг LaTeX кода и отображение
-          const preview = document.getElementById('pdf-preview');
-          
-          // Извлечение заголовка
-          const titleMatch = latexCode.match(/\\title\{([^}]*)\}/);
-          const title = titleMatch ? titleMatch[1] : "Без названия";
-          
-          // Извлечение автора
-          const authorMatch = latexCode.match(/\\author\{([^}]*)\}/);
-          const author = authorMatch ? authorMatch[1] : "";
-          
-          // Извлечение даты
-          const dateMatch = latexCode.match(/\\date\{([^}]*)\}/);
-          let date = dateMatch ? dateMatch[1] : "\\today";
-          if (date === "\\today") {
-            const today = new Date();
-            date = today.toLocaleDateString('ru-RU');
-          }
-          
-          // Извлечение секций
-          const sections = [];
-          const sectionRegex = /\\section\{([^}]*)\}([\s\S]*?)(?=\\section\{|\\end\{document\})/g;
-          let sectionMatch;
-          let content = latexCode;
-          while ((sectionMatch = sectionRegex.exec(content)) !== null) {
-            sections.push({
-              title: sectionMatch[1],
-              content: sectionMatch[2]
-            });
-          }
-          
-          // Создаем HTML для предпросмотра
-          let html = `
-            <div class="pdf-title">${title}</div>
-            <div class="pdf-author">${author}</div>
-            <div class="pdf-date">${date}</div>
-          `;
-          
-          // Добавляем секции
-          if (sections.length > 0) {
-            sections.forEach(section => {
-              html += `<div class="pdf-section">${section.title}</div>`;
-              
-              // Обработка списков и других элементов
-              let sectionContent = section.content;
-              
-              // Обработка списков itemize
-              sectionContent = sectionContent.replace(/\\begin\{itemize\}([\s\S]*?)\\end\{itemize\}/g, function(match, listContent) {
-                let listHTML = '<ul class="pdf-list">';
-                const itemRegex = /\\item\s+(.*?)(?=\\item|$)/gs;
-                let itemMatch;
-                while ((itemMatch = itemRegex.exec(listContent)) !== null) {
-                  listHTML += `<li>${itemMatch[1].trim()}</li>`;
-                }
-                listHTML += '</ul>';
-                return listHTML;
-              });
-              
-              // Разбиение на абзацы
-              const paragraphs = sectionContent.split('\n\n');
-              paragraphs.forEach(paragraph => {
-                if (paragraph.trim() && !paragraph.includes('<ul') && !paragraph.includes('<ol')) {
-                  html += `<div class="pdf-paragraph">${paragraph.trim()}</div>`;
-                } else {
-                  html += paragraph;
-                }
-              });
-            });
-          }
-          
-          // Обновляем предпросмотр
-          preview.innerHTML = html;
-          
-          // Запускаем MathJax для рендеринга формул если он доступен
-          if (typeof MathJax !== 'undefined') {
-            MathJax.typesetPromise([preview]).catch(function (err) {
-              console.error('MathJax ошибка:', err);
-            });
-          }
-          
-          if (statusElement) {
-            statusElement.textContent = "Компиляция завершена";
-            setTimeout(() => {
-              statusElement.textContent = "Готово";
-            }, 2000);
-          }
-        } catch (error) {
-          console.error("Ошибка компиляции:", error);
-          if (statusElement) {
-            statusElement.textContent = "Ошибка компиляции: " + error.message;
-          }
-        } finally {
-          if (loadingOverlay) {
-            loadingOverlay.style.display = 'none';
-          }
-        }
-      }, 800);
-    }
+    <!-- Стили -->
+    <link rel="stylesheet" href="css/styles.css">
     
-    // Функция для загрузки списка файлов
-    function loadFilesList() {
-      const fileList = document.getElementById('file-list');
-      fileList.innerHTML = '';
-      
-      // Получаем список файлов из localStorage
-      const fileKeys = Object.keys(localStorage).filter(key => key.startsWith('latex-document-'));
-      
-      // Если нет файлов, создаем первый файл
-      if (fileKeys.length === 0) {
-        localStorage.setItem('latex-document-' + currentFileName, editor.getValue());
-        fileKeys.push('latex-document-' + currentFileName);
-      }
-      
-      // Отображаем файлы
-      fileKeys.forEach(key => {
-        const fileName = key.replace('latex-document-', '');
-        const fileItem = document.createElement('div');
-        fileItem.className = 'file-item';
-        
-        if (fileName === currentFileName) {
-          fileItem.classList.add('active');
-        }
-        
-        fileItem.innerHTML = `
-          <div>${fileName}</div>
-          <div class="file-actions">
-            <button class="rename-file" data-name="${fileName}">Переименовать</button>
-            <button class="delete-file" data-name="${fileName}">Удалить</button>
-          </div>
-        `;
-        
-        // При клике на элемент загружаем файл
-        fileItem.addEventListener('click', function(e) {
-          // Игнорируем клики на кнопках
-          if (e.target.tagName === 'BUTTON') return;
-          
-          if (fileName !== currentFileName) {
-            loadFile(fileName);
-          }
-        });
-        
-        fileList.appendChild(fileItem);
-      });
-      
-      // Добавляем обработчики для кнопок
-      document.querySelectorAll('.rename-file').forEach(btn => {
-        btn.addEventListener('click', function() {
-          const oldName = this.getAttribute('data-name');
-          const newName = prompt('Введите новое имя файла:', oldName);
-          
-          if (newName && newName.trim() && newName !== oldName) {
-            renameFile(oldName, newName);
-          }
-        });
-      });
-      
-      document.querySelectorAll('.delete-file').forEach(btn => {
-        btn.addEventListener('click', function() {
-          const fileName = this.getAttribute('data-name');
-          
-          if (confirm(`Вы уверены, что хотите удалить файл "${fileName}"?`)) {
-            deleteFile(fileName);
-          }
-        });
-      });
-      
-      // Кнопка создания нового файла
-      document.getElementById('create-file-btn').addEventListener('click', function() {
-        const fileName = document.getElementById('new-file-name').value.trim();
-        if (fileName) {
-          createNewFile(fileName);
-          document.getElementById('new-file-name').value = '';
-        } else {
-          alert('Введите имя файла!');
-        }
-      });
-    }
+    <!-- CodeMirror -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/stex/stex.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/edit/matchbrackets.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/edit/closebrackets.min.js"></script>
     
-    // Функция загрузки файла
-    function loadFile(fileName) {
-      // Сохраняем текущий файл перед переключением
-      if (currentFileName) {
-        localStorage.setItem('latex-document-' + currentFileName, editor.getValue());
-      }
-      
-      // Загружаем выбранный файл
-      const fileContent = localStorage.getItem('latex-document-' + fileName);
-      if (fileContent) {
-        editor.setValue(fileContent);
-        currentFileName = fileName;
-        document.getElementById('current-file').textContent = fileName;
+    <!-- MathJax -->
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@3.2.0/es5/tex-mml-chtml.js"></script>
+</head>
+<body>
+    <!-- Заголовок -->
+    <header>
+        <h1>LaTeX Онлайн-редактор</h1>
+        <div class="header-buttons">
+            <button id="files-btn">Файлы</button>
+            <button id="settings-btn">Настройки</button>
+            <button id="smart-macros-btn">Умные макросы</button>
+            <button id="help-btn">Справка</button>
+        </div>
+    </header>
+    
+    <!-- Основной контейнер -->
+    <main>
+        <!-- Панель редактора -->
+        <div class="editor-pane">
+            <div class="toolbar">
+                <!-- Кнопки для вставки математических символов и функций -->
+                <button data-insert="\frac{}{}" title="Дробь">\frac{}</button>
+                <button data-insert="\sqrt{}" title="Корень">\sqrt{}</button>
+                <button data-insert="\sum_{i=1}^{n}" title="Сумма">\sum</button>
+                <button data-insert="\int_{a}^{b}" title="Интеграл">\int</button>
+                <button data-insert="\lim_{x \to \infty}" title="Предел">\lim</button>
+                
+                <!-- Кнопки для вставки структурных элементов -->
+                <button data-insert="\begin{equation}\n\n\end{equation}" title="Уравнение">Уравнение</button>
+                <button data-insert="\begin{itemize}\n\item \n\end{itemize}" title="Маркированный список">Список</button>
+                <button data-insert="\begin{enumerate}\n\item \n\end{enumerate}" title="Нумерованный список">Нумерованный список</button>
+                <button data-insert="\begin{figure}[h]\n\centering\n\includegraphics[width=0.8\textwidth]{image.png}\n\caption{Подпись}\n\label{fig:label}\n\end{figure}" title="Рисунок">Рисунок</button>
+                <button data-insert="\begin{table}[h]\n\centering\n\begin{tabular}{|c|c|}\n\hline\nЗаголовок 1 & Заголовок 2 \\\\\n\hline\nДанные 1 & Данные 2 \\\\\n\hline\n\end{tabular}\n\caption{Подпись}\n\label{tab:label}\n\end{table}" title="Таблица">Таблица</button>
+                
+                <!-- Кнопки для рисования -->
+                <button id="drawing-btn" title="Редактор рисования">Рисование</button>
+                <button id="image-btn" title="Загрузить изображение">Изображение</button>
+            </div>
+            
+            <div class="editor-container">
+                <textarea id="editor">
+\documentclass{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T2A]{fontenc}
+\usepackage[russian]{babel}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{hyperref}
+
+\title{Новый документ}
+\author{Автор}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\section{Введение}
+Добро пожаловать в LaTeX онлайн-редактор!
+
+\end{document}
+                </textarea>
+                <div class="loading-overlay">
+                    <div class="spinner"></div>
+                </div>
+            </div>
+            
+            <div class="status-bar">
+                <div id="status">Готово</div>
+                <div id="cursor-position">Строка: 1, Столбец: 1</div>
+                <div id="autosave-indicator" class="autosave-indicator"></div>
+            </div>
+        </div>
         
-        // Закрываем модальное окно
-        document.getElementById('files-modal').style.display = 'none';
-        
-        // Компилируем загруженный файл
-        compileLatex();
-      }
-    }
+        <!-- Панель предпросмотра -->
+        <div class="preview-pane">
+            <div class="toolbar">
+                <button id="compile-btn">Компилировать</button>
+                <button id="zoom-in">Увеличить</button>
+                <button id="zoom-out">Уменьшить</button>
+                <button id="download-pdf">Скачать PDF</button>
+                <span>Текущий файл: <span id="current-file">document1.tex</span></span>
+            </div>
+            
+            <div class="preview-container">
+                <div id="pdf-preview"></div>
+            </div>
+        </div>
+    </main>
     
-    // Функция для создания нового файла
-    function createNewFile(fileName) {
-      if (!fileName.trim()) {
-        alert('Имя файла не может быть пустым');
-        return;
-      }
-      
-      // Добавляем расширение .tex, если его нет
-      if (!fileName.endsWith('.tex')) {
-        fileName += '.tex';
-      }
-      
-      // Проверяем существование файла
-      if (localStorage.getItem('latex-document-' + fileName)) {
-        alert(`Файл с именем "${fileName}" уже существует!`);
-        return;
-      }
-      
-      // Сохраняем текущий файл
-      localStorage.setItem('latex-document-' + currentFileName, editor.getValue());
-      
-      // Создаем шаблон для нового файла
-      const templateContent = `\\documentclass{article}
-\\usepackage[utf8]{inputenc}
-\\usepackage[T2A]{fontenc}
-\\usepackage[russian]{babel}
-\\usepackage{amsmath}
-\\usepackage{amsfonts}
-\\usepackage{amssymb}
-\\usepackage{graphicx}
-\\usepackage{hyperref}
-
-\\title{${fileName.replace('.tex', '')}}
-\\author{Автор}
-\\date{\\today}
-
-\\begin{document}
-
-\\maketitle
-
-\\section{Введение}
-Содержимое нового файла.
-
-\\end{document}`;
-      
-      // Сохраняем новый файл
-      localStorage.setItem('latex-document-' + fileName, templateContent);
-      
-      // Загружаем новый файл в редактор
-      loadFile(fileName);
-      
-      // Обновляем список файлов
-      loadFilesList();
-    }
+    <!-- Модальные окна -->
     
-    // Функция переименования файла
-    function renameFile(oldName, newName) {
-      // Добавляем расширение .tex, если его нет
-      if (!newName.endsWith('.tex')) {
-        newName += '.tex';
-      }
-      
-      // Проверяем существование файла с новым именем
-      if (localStorage.getItem('latex-document-' + newName)) {
-        alert(`Файл с именем "${newName}" уже существует!`);
-        return;
-      }
-      
-      // Копируем содержимое
-      const content = localStorage.getItem('latex-document-' + oldName);
-      localStorage.setItem('latex-document-' + newName, content);
-      
-      // Удаляем старый файл
-      localStorage.removeItem('latex-document-' + oldName);
-      
-      // Если переименовываем текущий файл, обновляем currentFileName
-      if (oldName === currentFileName) {
-        currentFileName = newName;
-        document.getElementById('current-file').textContent = newName;
-      }
-      
-      // Обновляем список файлов
-      loadFilesList();
-    }
+    <!-- Модальное окно файлов -->
+    <div id="files-modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Файлы</h2>
+            
+            <div class="form-group">
+                <label for="new-file-name">Создать новый файл:</label>
+                <div style="display: flex; gap: 5px;">
+                    <input type="text" id="new-file-name" placeholder="Имя файла">
+                    <button id="create-file-btn">Создать</button>
+                </div>
+            </div>
+            
+            <h3>Мои файлы:</h3>
+            <div id="file-list" class="file-list"></div>
+        </div>
+    </div>
     
-    // Функция удаления файла
-    function deleteFile(fileName) {
-      localStorage.removeItem('latex-document-' + fileName);
-      
-      // Если удаляем текущий файл, загружаем другой
-      if (fileName === currentFileName) {
-        const fileKeys = Object.keys(localStorage).filter(key => key.startsWith('latex-document-'));
-        
-        if (fileKeys.length > 0) {
-          // Загружаем первый оставшийся файл
-          loadFile(fileKeys[0].replace('latex-document-', ''));
-        } else {
-          // Если файлов не осталось, создаем новый
-          const newFileName = 'document1.tex';
-          currentFileName = newFileName;
-          document.getElementById('current-file').textContent = newFileName;
-          
-          // Сбрасываем редактор к шаблону
-          editor.setValue(`\\documentclass{article}
-\\usepackage[utf8]{inputenc}
-\\usepackage[T2A]{fontenc}
-\\usepackage[russian]{babel}
-\\usepackage{amsmath}
-\\usepackage{amsfonts}
-\\usepackage{amssymb}
-\\usepackage{graphicx}
-\\usepackage{hyperref}
-
-\\title{Новый документ}
-\\author{Автор}
-\\date{\\today}
-
-\\begin{document}
-
-\\maketitle
-
-\\section{Введение}
-Содержимое нового документа.
-
-\\end{document}`);
-          
-          // Сохраняем новый файл
-          localStorage.setItem('latex-document-' + newFileName, editor.getValue());
-        }
-      }
-      
-      // Обновляем список файлов
-      loadFilesList();
-    }
+    <!-- Модальное окно настроек -->
+    <div id="settings-modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Настройки</h2>
+            
+            <div class="settings-group">
+                <h3>Автосохранение</h3>
+                <div class="settings-row">
+                    <label class="switch">
+                        <input type="checkbox" id="autosave-toggle" checked>
+                        <span class="slider"></span>
+                    </label>
+                    <span>Включить автосохранение</span>
+                </div>
+                <div class="settings-row">
+                    <label for="autosave-interval">Интервал автосохранения (сек):</label>
+                    <input type="number" id="autosave-interval" min="1" max="30" value="3">
+                </div>
+            </div>
+            
+            <div class="settings-group">
+                <h3>Автокомпиляция</h3>
+                <div class="settings-row">
+                    <label class="switch">
+                        <input type="checkbox" id="autocompile-toggle">
+                        <span class="slider"></span>
+                    </label>
+                    <span>Включить автокомпиляцию</span>
+                </div>
+                <div class="settings-row">
+                    <label for="autocompile-delay">Задержка автокомпиляции (сек):</label>
+                    <input type="number" id="autocompile-delay" min="1" max="10" value="2">
+                </div>
+            </div>
+            
+            <div class="settings-group">
+                <h3>Редактор</h3>
+                <div class="settings-row">
+                    <label for="font-size">Размер шрифта (px):</label>
+                    <input type="number" id="font-size" min="10" max="24" value="14">
+                </div>
+            </div>
+        </div>
+    </div>
     
-    // Функция обновления статуса
-    function updateStatus(message, timeout = 2000) {
-      const statusElement = document.getElementById('status');
-      
-      if (statusElement) {
-        statusElement.textContent = message;
-        
-        if (timeout) {
-          setTimeout(() => {
-            statusElement.textContent = "Готово";
-          }, timeout);
-        }
-      }
-    }
+    <!-- Модальное окно умных макросов -->
+    <div id="smart-macros-modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Умные макросы</h2>
+            
+            <div class="macro-tabs">
+                <button class="macro-tab-btn active" data-tab="user-macros">Мои макросы</button>
+                <button class="macro-tab-btn" data-tab="math-macros">Математика</button>
+                <button class="macro-tab-btn" data-tab="structure-macros">Структура</button>
+                <button class="macro-tab-btn" data-tab="format-macros">Форматирование</button>
+                <button class="macro-tab-btn" data-tab="env-macros">Окружения</button>
+                <button class="macro-tab-btn" data-tab="create-macro">Создать макрос</button>
+            </div>
+            
+            <!-- Пользовательские макросы -->
+            <div id="user-macros" class="macro-tab-content">
+                <h3>Ваши умные макросы</h3>
+                <div id="empty-user-macros" class="empty-list-message">
+                    У вас пока нет пользовательских макросов. Вы можете создать свой макрос или добавить из предустановленных категорий.
+                </div>
+                <div id="smart-macros-list" class="macros-list"></div>
+            </div>
+            
+            <!-- Прочие вкладки и содержимое -->
+            <!-- ... -->
+        </div>
+    </div>
     
-    // Функция парсинга LaTeX документа
-    function parseLatexDocument(latexCode) {
-      const document = {};
-      
-      // Извлечение заголовка
-      const titleMatch = latexCode.match(/\\title\{([^}]*)\}/);
-      document.title = titleMatch ? titleMatch[1] : "Без названия";
-      
-      // Извлечение автора
-      const authorMatch = latexCode.match(/\\author\{([^}]*)\}/);
-      document.author = authorMatch ? authorMatch[1] : "";
-      
-      // Извлечение даты
-      const dateMatch = latexCode.match(/\\date\{([^}]*)\}/);
-      document.date = dateMatch ? dateMatch[1] : "\\today";
-      if (document.date === "\\today") {
-        const today = new Date();
-        document.date = today.toLocaleDateString('ru-RU');
-      }
-      
-      // Извлечение содержимого документа
-      const bodyMatch = latexCode.match(/\\begin\{document\}([\s\S]*)\\end\{document\}/);
-      document.body = bodyMatch ? bodyMatch[1] : "";
-      
-      // Извлечение секций
-      document.sections = [];
-      const sectionRegex = /\\section\{([^}]*)\}([\s\S]*?)(?=\\section\{|\\end\{document\})/g;
-      let sectionMatch;
-      while ((sectionMatch = sectionRegex.exec(latexCode)) !== null) {
-        document.sections.push({
-          title: sectionMatch[1],
-          content: sectionMatch[2]
-        });
-      }
-      
-      return document;
-    }
-  </script>
-  
-  <!-- Скрипт для загрузки изображений -->
-  <script src="js/image-upload.js"></script>
+    <!-- Скрипты -->
+    <script src="js/settings.js"></script>
+    <script src="js/editor.js"></script>
+    <script src="js/file-manager.js"></script>
+    <script src="js/smart-macros.js"></script>
+    <script src="js/preview.js"></script>
+    <script src="js/drawing-canvas.js"></script>
+    <script src="js/drawing-tools.js"></script>
+    <script src="js/drawing-tikz-convertor.js"></script>
+    <script src="js/drawing-ui.js"></script>
+    <script src="js/drawing-editor.js"></script>
+    <script src="js/image-upload.js"></script>
+    <script src="js/main.js"></script>
 </body>
 </html>
