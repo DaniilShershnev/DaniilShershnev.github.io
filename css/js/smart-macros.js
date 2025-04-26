@@ -314,4 +314,169 @@ function addExportImportButtons() {
   // Кнопка экспорта
   const exportBtn = document.createElement('button');
   exportBtn.id = 'export-macros-btn';
-  exportBtn.innerText
+  exportBtn.innerText = 'Экспорт макросов';
+  exportBtn.className = 'primary-btn';
+  exportBtn.addEventListener('click', exportMacros);
+  
+  // Кнопка импорта
+  const importBtn = document.createElement('button');
+  importBtn.id = 'import-macros-btn';
+  importBtn.innerText = 'Импорт макросов';
+  importBtn.className = 'primary-btn';
+  importBtn.addEventListener('click', importMacros);
+  
+  buttonContainer.appendChild(exportBtn);
+  buttonContainer.appendChild(importBtn);
+  macrosContent.appendChild(buttonContainer);
+}
+
+/**
+ * Экспорт макросов в JSON-файл
+ */
+function exportMacros() {
+  const macrosJSON = JSON.stringify(smartMacros, null, 2);
+  
+  // Создаем элемент для скачивания
+  const blob = new Blob([macrosJSON], {type: 'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'latex-smart-macros.json';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+/**
+ * Импорт макросов из JSON-файла
+ */
+function importMacros() {
+  // Создаем скрытый input для загрузки файла
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = '.json';
+  
+  input.onchange = e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    
+    const reader = new FileReader();
+    reader.onload = function(event) {
+      try {
+        const importedMacros = JSON.parse(event.target.result);
+        
+        if (Array.isArray(importedMacros)) {
+          // Спрашиваем пользователя о способе импорта
+          const importMode = confirm('Заменить существующие макросы импортированными? Нажмите "OK" для замены или "Отмена" для добавления к существующим.');
+          
+          if (importMode) {
+            // Заменяем все макросы
+            smartMacros = importedMacros;
+          } else {
+            // Добавляем только новые макросы
+            importedMacros.forEach(newMacro => {
+              if (!macroExists(newMacro.pattern)) {
+                smartMacros.push(newMacro);
+              }
+            });
+          }
+          
+          // Сохраняем и обновляем интерфейс
+          localStorage.setItem('latex-smart-macros', JSON.stringify(smartMacros));
+          updateSmartMacrosList();
+          
+          alert(`Импортировано успешно: ${importedMacros.length} макросов.`);
+        } else {
+          alert('Ошибка: неверный формат файла. Ожидается массив макросов.');
+        }
+      } catch (e) {
+        console.error('Ошибка при импорте макросов:', e);
+        alert('Ошибка при импорте файла. Убедитесь, что файл содержит корректный JSON.');
+      }
+    };
+    
+    reader.readAsText(file);
+  };
+  
+  input.click();
+}
+
+/**
+ * Проверка существования макроса по шаблону
+ * @param {string} pattern - шаблон макроса
+ * @returns {boolean} - true если макрос существует, false в противном случае
+ */
+function macroExists(pattern) {
+  return smartMacros.some(macro => macro.pattern === pattern);
+}
+
+/**
+ * Настройка обработчиков событий для модального окна умных макросов
+ */
+function setupSmartMacrosEvents() {
+  // Открытие модального окна
+  document.getElementById('smart-macros-btn').addEventListener('click', function() {
+    const modal = document.getElementById('smart-macros-modal');
+    if (modal) {
+      modal.style.display = 'block';
+      switchTab('user-macros');
+      setupPredefinedMacros();
+      setupTabSwitching();
+      addExportImportButtons();
+    }
+  });
+  
+  // Обработчики для полей создания умных макросов
+  document.getElementById('smart-macro-pattern').addEventListener('input', updateSmartMacroPreview);
+  document.getElementById('smart-macro-template').addEventListener('input', updateSmartMacroPreview);
+  
+  // Кнопка добавления пользовательского макроса
+  document.getElementById('add-smart-macro-btn').addEventListener('click', function() {
+    const pattern = document.getElementById('smart-macro-pattern').value.trim();
+    const template = document.getElementById('smart-macro-template').value.trim();
+    
+    if (!pattern || !template) {
+      alert('Пожалуйста, заполните оба поля.');
+      return;
+    }
+    
+    // Проверка валидности регулярного выражения
+    try {
+      new RegExp(pattern);
+    } catch (e) {
+      alert('Ошибка в шаблоне. Пожалуйста, проверьте корректность регулярного выражения.');
+      return;
+    }
+    
+    // Проверяем, не существует ли уже такой макрос
+    const existingMacroIndex = smartMacros.findIndex(macro => macro.pattern === pattern);
+    if (existingMacroIndex >= 0) {
+      if (confirm('Макрос с таким шаблоном уже существует. Хотите заменить его?')) {
+        smartMacros[existingMacroIndex].template = template;
+      } else {
+        return;
+      }
+    } else {
+      // Добавляем новый умный макрос
+      smartMacros.push({
+        pattern: pattern,
+        template: template
+      });
+    }
+    
+    // Сохраняем в localStorage
+    localStorage.setItem('latex-smart-macros', JSON.stringify(smartMacros));
+    
+    // Очищаем поля формы
+    document.getElementById('smart-macro-pattern').value = '';
+    document.getElementById('smart-macro-template').value = '';
+    
+    // Обновляем список и переключаемся на вкладку пользовательских макросов
+    updateSmartMacrosList();
+    switchTab('user-macros');
+    
+    // Уведомляем пользователя
+    updateStatus('Умный макрос добавлен', 3000);
+  });
+}
