@@ -10,6 +10,11 @@ let scale = 1.0;
  * Компиляция LaTeX кода
  */
 function compileLatex() {
+  if (!editor) {
+    console.error('Редактор не инициализирован');
+    return;
+  }
+
   const latexCode = editor.getValue();
   
   // Показываем индикатор загрузки
@@ -35,6 +40,9 @@ function compileLatex() {
       
       if (statusElement) {
         statusElement.textContent = "Компиляция завершена";
+        setTimeout(() => {
+          statusElement.textContent = "Готово";
+        }, 2000);
       }
       
     } catch (error) {
@@ -180,7 +188,9 @@ function renderPdfPreview(docData) {
  */
 function updateZoom() {
   const preview = document.getElementById('pdf-preview');
-  preview.style.transform = `scale(${scale})`;
+  if (preview) {
+    preview.style.transform = `scale(${scale})`;
+  }
 }
 
 /**
@@ -188,36 +198,54 @@ function updateZoom() {
  */
 function setupPreviewEvents() {
   // Кнопка компиляции
-  document.getElementById('compile-btn').addEventListener('click', compileLatex);
+  const compileBtn = document.getElementById('compile-btn');
+  if (compileBtn) {
+    compileBtn.addEventListener('click', compileLatex);
+  }
   
   // Увеличение масштаба
-  document.getElementById('zoom-in').addEventListener('click', function() {
-    scale += 0.1;
-    updateZoom();
-  });
+  const zoomInBtn = document.getElementById('zoom-in');
+  if (zoomInBtn) {
+    zoomInBtn.addEventListener('click', function() {
+      scale += 0.1;
+      updateZoom();
+    });
+  }
   
   // Уменьшение масштаба
-  document.getElementById('zoom-out').addEventListener('click', function() {
-    if (scale > 0.5) {
-      scale -= 0.1;
-      updateZoom();
-    }
-  });
+  const zoomOutBtn = document.getElementById('zoom-out');
+  if (zoomOutBtn) {
+    zoomOutBtn.addEventListener('click', function() {
+      if (scale > 0.5) {
+        scale -= 0.1;
+        updateZoom();
+      }
+    });
+  }
   
   // Загрузка PDF
-  document.getElementById('download-pdf').addEventListener('click', function() {
-    alert('PDF файл успешно скомпилирован и готов к скачиванию.\nВ реальном приложении здесь будет загрузка настоящего PDF файла.');
-  });
+  const downloadBtn = document.getElementById('download-pdf');
+  if (downloadBtn) {
+    downloadBtn.addEventListener('click', function() {
+      alert('PDF файл успешно скомпилирован и готов к скачиванию.\nВ реальном приложении здесь будет загрузка настоящего PDF файла.');
+    });
+  }
   
   // Справка
-  document.getElementById('help-btn').addEventListener('click', function() {
-    alert('Справка по LaTeX:\n\n' + 
-      '- Используйте кнопки панели инструментов для вставки типовых элементов\n' +
-      '- Нажмите Tab после ввода выражения вида a/b для автоматического преобразования в дробь\n' +
-      '- Создавайте собственные умные макросы через меню "Умные макросы"\n' +
-      '- В меню "Умные макросы" доступны категории: Математика, Структура, Форматирование и Окружения\n' +
-      '- Управляйте файлами через меню "Файлы"\n' +
-      '- Настраивайте автокомпиляцию и автосохранение в настройках\n' +
-      '- Нажмите Ctrl+Enter для компиляции документа');
-  });
+  const helpBtn = document.getElementById('help-btn');
+  if (helpBtn) {
+    helpBtn.addEventListener('click', function() {
+      alert('Справка по LaTeX:\n\n' + 
+        '- Используйте кнопки панели инструментов для вставки типовых элементов\n' +
+        '- Нажмите Tab после ввода выражения вида a/b для автоматического преобразования в дробь\n' +
+        '- Создавайте собственные умные макросы через меню "Умные макросы"\n' +
+        '- В меню "Умные макросы" доступны категории: Математика, Структура, Форматирование и Окружения\n' +
+        '- Управляйте файлами через меню "Файлы"\n' +
+        '- Настраивайте автокомпиляцию и автосохранение в настройках\n' +
+        '- Нажмите Ctrl+Enter для компиляции документа');
+    });
+  }
 }
+
+// Определяем глобальную функцию компиляции для доступа из других модулей
+window.compileLatex = compileLatex;
