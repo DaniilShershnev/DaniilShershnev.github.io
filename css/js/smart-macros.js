@@ -45,6 +45,24 @@ function applySmartMacros(cm) {
   const line = cm.getLine(cursor.line);
   const textBeforeCursor = line.substring(0, cursor.ch);
   
+  // Проверяем специальное кодовое слово для редактора рисования
+  if (textBeforeCursor.trim() === "\\draw") {
+    // Удаляем кодовое слово
+    const startPos = {
+      line: cursor.line,
+      ch: textBeforeCursor.indexOf("\\draw")
+    };
+    cm.replaceRange("", startPos, cursor);
+    
+    // Открываем редактор рисования
+    openDrawingEditor();
+    
+    // Обновляем статус
+    updateStatus('Открыт редактор рисования');
+    
+    return true;
+  }
+  
   // Попытка применить умные макросы
   for (const smartMacro of smartMacros) {
     try {
