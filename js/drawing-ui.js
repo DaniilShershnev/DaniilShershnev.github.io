@@ -3,6 +3,9 @@
  * Отвечает за создание и управление UI элементами редактора рисования
  */
 
+// Объявим переменную для доступа к функции закрытия редактора
+let closeDrawingEditor;
+
 /**
  * Инициализирует пользовательский интерфейс редактора рисования
  */
@@ -122,37 +125,71 @@ function createDrawingModal() {
 function setupDrawingUIEvents() {
   // Закрытие модального окна
   document.querySelector('#drawing-modal .close').addEventListener('click', function() {
-    if (drawingEditor) {
-      drawingEditor.close();
+    const modal = document.getElementById('drawing-modal');
+    if (modal) {
+      modal.style.display = 'none';
     }
   });
   
   // Кнопка отмены
   document.getElementById('drawing-cancel').addEventListener('click', function() {
-    if (drawingEditor) {
-      drawingEditor.close();
+    const modal = document.getElementById('drawing-modal');
+    if (modal) {
+      modal.style.display = 'none';
     }
   });
   
   // Кнопка вставки
   document.getElementById('drawing-insert').addEventListener('click', function() {
-    if (drawingEditor) {
-      drawingEditor.insertDrawing();
+    // Получаем TikZ-код
+    if (typeof convertToTikZ !== 'function') {
+      console.warn('Функция convertToTikZ не определена');
+      return;
+    }
+    
+    const tikzCode = convertToTikZ();
+    
+    // Получаем позицию курсора в редакторе LaTeX
+    const cursor = editor.getCursor();
+    
+    // Формируем код с окружением tikzpicture
+    const fullCode = `\\begin{tikzpicture}\n${tikzCode}\n\\end{tikzpicture}`;
+    
+    // Вставляем в редактор
+    editor.replaceRange(fullCode, cursor);
+    
+    // Закрываем редактор рисования
+    const modal = document.getElementById('drawing-modal');
+    if (modal) {
+      modal.style.display = 'none';
+    }
+    
+    // Обновляем статус
+    if (typeof updateStatus === 'function') {
+      updateStatus('Рисунок вставлен');
     }
   });
   
   // Закрытие модального окна при клике вне содержимого
   document.getElementById('drawing-modal').addEventListener('click', function(event) {
-    if (event.target === this && drawingEditor) {
-      drawingEditor.close();
+    if (event.target === this) {
+      this.style.display = 'none';
     }
   });
   
   // Обработка изменения размера окна
   window.addEventListener('resize', function() {
-    if (drawingEditor && drawingEditor.isOpen) {
-      resetCanvasSize();
-      redrawCanvas();
+    if (document.getElementById('drawing-modal').style.display === 'block') {
+      if (typeof resetCanvasSize === 'function') {
+        resetCanvasSize();
+      }
+      if (typeof redrawCanvas === 'function') {
+        redrawCanvas();
+      }
     }
   });
 }
+
+// Экспортируем функции в глобальную область видимости
+window.initDrawingUI = initDrawingUI;
+window.createDrawingModal = createDrawingModal;
