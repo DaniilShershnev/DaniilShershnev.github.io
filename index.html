@@ -218,5 +218,33 @@
     <script src="js/drawing-editor.js"></script>
     <script src="js/image-upload.js"></script>
     <script src="js/main.js"></script>
+    <script>
+document.addEventListener('DOMContentLoaded', function() {
+  // Проверяем, открывается ли модальное окно рисования
+  const drawingBtn = document.getElementById('drawing-btn');
+  if (drawingBtn) {
+    drawingBtn.addEventListener('click', function() {
+      console.log('Кнопка рисования нажата');
+      
+      // Проверяем, существует ли модальное окно
+      if (!document.getElementById('drawing-modal')) {
+        console.log('Модальное окно рисования не найдено, инициализируем UI');
+        if (typeof initDrawingUI === 'function') {
+          initDrawingUI();
+        } else {
+          console.error('Функция initDrawingUI не определена');
+        }
+      }
+      
+      // Открываем редактор
+      if (typeof window.openDrawingEditor === 'function') {
+        window.openDrawingEditor();
+      } else {
+        console.error('Функция openDrawingEditor не определена');
+      }
+    });
+  }
+});
+</script>
 </body>
 </html>
