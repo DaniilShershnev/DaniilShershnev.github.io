@@ -34,3 +34,167 @@ function initDrawingEditor() {
         console.log('Инициализация canvas через window.drawingCanvas.init');
         window.drawingCanvas.init();
       } else if (typeof initDrawingCanvas === 'function') {
+        console.log('Инициализация canvas через initDrawingCanvas');
+        initDrawingCanvas();
+      } else {
+        console.warn('Функции для инициализации canvas не найдены');
+      }
+      
+      // Инициализируем инструменты
+      if (typeof window.drawingTools?.init === 'function') {
+        console.log('Инициализация инструментов через window.drawingTools.init');
+        window.drawingTools.init();
+      } else if (typeof initDrawingTools === 'function') {
+        console.log('Инициализация инструментов через initDrawingTools');
+        initDrawingTools();
+      } else {
+        console.warn('Функции для инициализации инструментов рисования не найдены');
+      }
+      
+      // Инициализируем историю
+      if (typeof window.drawingHistory?.init === 'function') {
+        console.log('Инициализация истории через window.drawingHistory.init');
+        window.drawingHistory.init();
+      }
+    } else {
+      console.error('Не удалось найти или создать модальное окно редактора');
+    }
+  };
+  
+  console.log("Редактор рисования инициализирован успешно");
+}
+
+/**
+ * Добавляет отладочные сообщения в модальное окно
+ * @param {string} message - сообщение для отображения
+ */
+function debugLog(message) {
+  console.log(message);
+  
+  // Создаем элемент для вывода отладочной информации, если его нет
+  let debugElement = document.getElementById('drawing-debug');
+  if (!debugElement) {
+    const container = document.getElementById('drawing-canvas-container');
+    if (container) {
+      debugElement = document.createElement('div');
+      debugElement.id = 'drawing-debug';
+      debugElement.style.position = 'absolute';
+      debugElement.style.bottom = '5px';
+      debugElement.style.left = '5px';
+      debugElement.style.background = 'rgba(0,0,0,0.7)';
+      debugElement.style.color = 'white';
+      debugElement.style.padding = '5px';
+      debugElement.style.borderRadius = '3px';
+      debugElement.style.fontSize = '12px';
+      debugElement.style.fontFamily = 'monospace';
+      debugElement.style.zIndex = '1000';
+      debugElement.style.maxWidth = '80%';
+      debugElement.style.maxHeight = '150px';
+      debugElement.style.overflow = 'auto';
+      container.appendChild(debugElement);
+    }
+  }
+  
+  if (debugElement) {
+    const timeStamp = new Date().toLocaleTimeString();
+    const logItem = document.createElement('div');
+    logItem.textContent = `[${timeStamp}] ${message}`;
+    debugElement.appendChild(logItem);
+    
+    // Прокручиваем до последнего сообщения
+    debugElement.scrollTop = debugElement.scrollHeight;
+    
+    // Ограничиваем количество сообщений
+    while (debugElement.children.length > 50) {
+      debugElement.removeChild(debugElement.firstChild);
+    }
+  }
+}
+
+/**
+ * Проверяет состояние инициализации редактора рисования
+ * и выводит информацию о потенциальных проблемах
+ */
+function checkDrawingEditorState() {
+  console.log("Проверка состояния редактора рисования");
+  
+  // Проверяем наличие canvas
+  const canvas = document.getElementById('drawing-canvas');
+  if (!canvas) {
+    console.error('Canvas не найден!');
+    return false;
+  }
+  
+  // Проверяем доступность контекста
+  const context = canvas.getContext('2d');
+  if (!context) {
+    console.error('Не удалось получить контекст для canvas!');
+    return false;
+  }
+  
+  // Проверяем размеры canvas
+  if (canvas.width === 0 || canvas.height === 0) {
+    console.error('Canvas имеет нулевые размеры!');
+    return false;
+  }
+  
+  // Проверяем наличие обработчиков событий
+  const events = ['mousedown', 'mousemove', 'mouseup'];
+  let hasAllEvents = true;
+  
+  events.forEach(eventName => {
+    if (getEventListeners(canvas, eventName).length === 0) {
+      console.error(`Отсутствует обработчик события ${eventName} для canvas!`);
+      hasAllEvents = false;
+    }
+  });
+  
+  // Проверяем наличие кнопок инструментов
+  const tools = document.querySelectorAll('.drawing-tool');
+  if (tools.length === 0) {
+    console.error('Не найдены кнопки инструментов!');
+    return false;
+  }
+  
+  // Проверяем глобальные функции
+  const requiredFunctions = [
+    'drawElement',
+    'redrawCanvas',
+    'createDrawingElement',
+    'updateDrawingElement'
+  ];
+  
+  let hasFunctions = true;
+  requiredFunctions.forEach(funcName => {
+    if (typeof window[funcName] !== 'function') {
+      console.error(`Функция ${funcName} не определена!`);
+      hasFunctions = false;
+    }
+  });
+  
+  if (hasAllEvents && hasFunctions) {
+    console.log('Редактор рисования инициализирован корректно');
+    return true;
+  }
+  
+  return false;
+}
+
+/**
+ * Получает все обработчики событий элемента
+ * Вспомогательная функция для отладки
+ * @param {HTMLElement} element - DOM-элемент
+ * @param {string} eventName - имя события
+ * @returns {Array} - массив обработчиков
+ */
+function getEventListeners(element, eventName) {
+  // В обычных браузерах нет прямого способа получить список обработчиков
+  // Это заглушка, которая просто возвращает пустой массив
+  // В реальности мы не можем достоверно определить наличие обработчиков без инструментов разработчика
+  return [];
+}
+
+// Экспортируем функции в глобальную область видимости
+window.initDrawingEditor = initDrawingEditor;
+window.debugLog = debugLog;
+window.checkDrawingEditorState = checkDrawingEditorState;
