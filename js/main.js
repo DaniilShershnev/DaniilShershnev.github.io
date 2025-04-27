@@ -95,6 +95,49 @@ if (drawingBtn) {
   } else {
     console.warn('Функция setupPreviewEvents не определена');
   }
+  // Инициализация модуля рисования на PDF
+if (typeof window.PDFDrawing?.initialize === 'function') {
+  window.PDFDrawing.initialize();
+} else {
+  console.warn('Модуль PDFDrawing не определен или не имеет метода initialize');
+}
+
+/**
+ * Добавьте следующий код в конец файла main.js
+ */
+
+/**
+ * Публикует событие перед компиляцией LaTeX
+ * Обертка для стандартной функции compileLatex
+ */
+function setupCompileLatexWrapper() {
+  // Проверяем, существует ли оригинальная функция
+  if (typeof window.compileLatex === 'function') {
+    // Сохраняем оригинальную функцию
+    const originalCompileLatex = window.compileLatex;
+    
+    // Переопределяем функцию
+    window.compileLatex = function() {
+      // Публикуем событие перед компиляцией
+      document.dispatchEvent(new CustomEvent('before-latex-compile'));
+      
+      // Вызываем оригинальную функцию
+      const result = originalCompileLatex.apply(this, arguments);
+      
+      // После некоторой задержки, публикуем событие завершения компиляции
+      setTimeout(() => {
+        document.dispatchEvent(new CustomEvent('after-latex-compile'));
+      }, 1000); // Задержка в 1 секунду для завершения рендеринга
+      
+      return result;
+    };
+  }
+}
+
+// Вызываем функцию настройки обертки для compileLatex
+document.addEventListener('DOMContentLoaded', function() {
+  setupCompileLatexWrapper();
+});
 }
 
 /**
