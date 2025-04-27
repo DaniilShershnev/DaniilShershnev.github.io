@@ -442,7 +442,7 @@ function handlePointerUp(e) {
 /**
  * Перерисовывает весь canvas
  */
-function redrawCanvas() {
+ function redrawCanvas() {
   if (!drawingContext) {
     console.error('Контекст canvas не инициализирован');
     return;
@@ -454,27 +454,121 @@ function redrawCanvas() {
   // Рисуем сетку
   drawGrid();
   
-  // Проверяем доступность функции drawElement
-  let drawFunc;
-  if (typeof window.drawElement === 'function') {
-    drawFunc = window.drawElement;
-  } else if (typeof window.drawingTools?.drawElement === 'function') {
-    drawFunc = window.drawingTools.drawElement;
-  } else {
-    console.error('Функция drawElement не найдена');
-    return;
-  }
-  
-  // Рисуем все элементы
-  if (drawingElements && drawingElements.length > 0) {
-    drawingElements.forEach(element => {
-      drawFunc(element);
-    });
-  }
+  // Рисуем все элементы напрямую, без вызова внешних функций
+  drawingElements.forEach(element => {
+    // Сохраняем настройки контекста
+    drawingContext.save();
+    
+    // Устанавливаем параметры для рисования
+    drawingContext.strokeStyle = element.color || '#000000';
+    drawingContext.lineWidth = element.lineWidth || 2;
+    drawingContext.lineJoin = 'round';
+    drawingContext.lineCap = 'round';
+    
+    // Рисуем элемент в зависимости от типа
+    if (element.type === 'freehand' && element.points && element.points.length) {
+      drawingContext.beginPath();
+      drawingContext.moveTo(element.points[0].x, element.points[0].y);
+      for (let i = 1; i < element.points.length; i++) {
+        drawingContext.lineTo(element.points[i].x, element.points[i].y);
+      }
+      drawingContext.stroke();
+    } else if (element.type === 'line') {
+      drawingContext.beginPath();
+      drawingContext.moveTo(element.startX, element.startY);
+      drawingContext.lineTo(element.endX, element.endY);
+      drawingContext.stroke();
+    } else if (element.type === 'rectangle') {
+      const x = Math.min(element.startX, element.endX);
+      const y = Math.min(element.startY, element.endY);
+      const width = Math.abs(element.endX - element.startX);
+      const height = Math.abs(element.endY - element.startY);
+      
+      drawingContext.beginPath();
+      drawingContext.rect(x, y, width, height);
+      
+      if (element.fill && element.fill !== 'transparent') {
+        drawingContext.fillStyle = element.fill;
+        drawingContext.fill();
+      }
+      
+      drawingContext.stroke();
+    } else if (element.type === 'ellipse') {
+      const centerX = (element.startX + element.endX) / 2;
+      const centerY = (element.startY + element.endY) / 2;
+      const radiusX = Math.abs(element.endX - element.startX) / 2;
+      const radiusY = Math.abs(element.endY - element.startY) / 2;
+      
+      drawingContext.beginPath();
+      drawingContext.ellipse(centerX, centerY, radiusX, radiusY, 0, 0, 2 * Math.PI);
+      
+      if (element.fill && element.fill !== 'transparent') {
+        drawingContext.fillStyle = element.fill;
+        drawingContext.fill();
+      }
+      
+      drawingContext.stroke();
+    }
+    
+    // Восстанавливаем настройки контекста
+    drawingContext.restore();
+  });
   
   // Рисуем текущий элемент, если он есть
   if (currentElement) {
-    drawFunc(currentElement);
+    // Повторяем то же самое для текущего элемента
+    drawingContext.save();
+    
+    drawingContext.strokeStyle = currentElement.color || '#000000';
+    drawingContext.lineWidth = currentElement.lineWidth || 2;
+    drawingContext.lineJoin = 'round';
+    drawingContext.lineCap = 'round';
+    
+    if (currentElement.type === 'freehand' && currentElement.points && currentElement.points.length) {
+      drawingContext.beginPath();
+      drawingContext.moveTo(currentElement.points[0].x, currentElement.points[0].y);
+      for (let i = 1; i < currentElement.points.length; i++) {
+        drawingContext.lineTo(currentElement.points[i].x, currentElement.points[i].y);
+      }
+      drawingContext.stroke();
+    } else if (currentElement.type === 'line') {
+      drawingContext.beginPath();
+      drawingContext.moveTo(currentElement.startX, currentElement.startY);
+      drawingContext.lineTo(currentElement.endX, currentElement.endY);
+      drawingContext.stroke();
+    } else if (currentElement.type === 'rectangle') {
+      const x = Math.min(currentElement.startX, currentElement.endX);
+      const y = Math.min(currentElement.startY, currentElement.endY);
+      const width = Math.abs(currentElement.endX - currentElement.startX);
+      const height = Math.abs(currentElement.endY - currentElement.startY);
+      
+      drawingContext.beginPath();
+      drawingContext.rect(x, y, width, height);
+      
+      if (currentElement.fill && currentElement.fill !== 'transparent') {
+        drawingContext.fillStyle = currentElement.fill;
+        drawingContext.fill();
+      }
+      
+      drawingContext.stroke();
+    } else if (currentElement.type === 'ellipse') {
+      const centerX = (currentElement.startX + currentElement.endX) / 2;
+      const centerY = (currentElement.startY + currentElement.endY) / 2;
+      const radiusX = Math.abs(currentElement.endX - currentElement.startX) / 2;
+      const radiusY = Math.abs(currentElement.endY - currentElement.startY) / 2;
+      
+      drawingContext.beginPath();
+      drawingContext.ellipse(centerX, centerY, radiusX, radiusY, 0, 0, 2 * Math.PI);
+      
+      if (currentElement.fill && currentElement.fill !== 'transparent') {
+        drawingContext.fillStyle = currentElement.fill;
+        drawingContext.fill();
+      }
+      
+      drawingContext.stroke();
+    }
+    
+    drawingContext.restore();
   }
 }
 
