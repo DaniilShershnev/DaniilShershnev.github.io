@@ -62,6 +62,18 @@ function initDrawingEditor() {
       // Обновляем статус
       updateStatus('Рисунок вставлен');
     }
+    // Интегрируем улучшенный UI и инструменты
+if (typeof window.drawingCanvas?.init === 'function') {
+  window.drawingCanvas.init();
+} else {
+  console.warn('Функция window.drawingCanvas.init не определена');
+}
+
+if (typeof window.drawingTools?.init === 'function') {
+  window.drawingTools.init();
+} else {
+  console.warn('Функция window.drawingTools.init не определена');
+}
   };
   
   // Устанавливаем обработчики событий
