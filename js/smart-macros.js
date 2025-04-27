@@ -257,7 +257,31 @@ function switchTab(tabId) {
   // Активируем выбранную вкладку
   document.querySelector(`.macro-tab-btn[data-tab="${tabId}"]`).classList.add('active');
   document.getElementById(tabId).style.display = 'block';
+  /**
+ * Функция переключения вкладок в модальном окне умных макросов
+ * @param {string} tabId - идентификатор вкладки
+ */
+function switchTab(tabId) {
+  // Деактивируем все вкладки
+  document.querySelectorAll('.macro-tab-btn').forEach(btn => {
+    btn.classList.remove('active');
+  });
+  document.querySelectorAll('.macro-tab-content').forEach(content => {
+    if (content) content.style.display = 'none';
+  });
   
+  // Активируем выбранную вкладку
+  const tabButton = document.querySelector(`.macro-tab-btn[data-tab="${tabId}"]`);
+  if (tabButton) tabButton.classList.add('active');
+  
+  const tabContent = document.getElementById(tabId);
+  if (tabContent) tabContent.style.display = 'block';
+  
+  // Если выбрана вкладка пользовательских макросов, обновляем список
+  if (tabId === 'user-macros') {
+    updateSmartMacrosList();
+  }
+}
   // Если выбрана вкладка пользовательских макросов, обновляем список
   if (tabId === 'user-macros') {
     updateSmartMacrosList();
