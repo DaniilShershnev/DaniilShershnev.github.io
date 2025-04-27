@@ -62,6 +62,83 @@ function initDrawingEditor() {
   };
   
   console.log("Редактор рисования инициализирован успешно");
+
+  // Убеждаемся, что функция openDrawingEditor доступна глобально
+window.openDrawingEditor = function(isPdfDrawingMode = false) {
+  console.log("Вызвана функция openDrawingEditor, режим PDF:", isPdfDrawingMode);
+  
+  // Проверяем, существует ли модальное окно
+  if (!document.getElementById('drawing-modal')) {
+    console.log('Модальное окно редактора не найдено, создаем его');
+    if (typeof initDrawingUI === 'function') {
+      initDrawingUI();
+    } else {
+      console.error('Функция initDrawingUI не определена');
+      return;
+    }
+  }
+  
+  // Отображаем модальное окно
+  const modal = document.getElementById('drawing-modal');
+  if (modal) {
+    modal.style.display = 'block';
+    
+    // Устанавливаем атрибут, указывающий на режим рисования на PDF
+    if (isPdfDrawingMode) {
+      modal.setAttribute('data-pdf-drawing-mode', 'true');
+    } else {
+      modal.removeAttribute('data-pdf-drawing-mode');
+    }
+    
+    // Инициализируем canvas
+    if (typeof window.drawingCanvas?.init === 'function') {
+      console.log('Инициализация canvas через window.drawingCanvas.init');
+      window.drawingCanvas.init();
+    } else if (typeof initDrawingCanvas === 'function') {
+      console.log('Инициализация canvas через initDrawingCanvas');
+      initDrawingCanvas();
+    } else {
+      console.warn('Функции для инициализации canvas не найдены');
+    }
+    
+    // Инициализируем инструменты
+    if (typeof window.drawingTools?.init === 'function') {
+      console.log('Инициализация инструментов через window.drawingTools.init');
+      window.drawingTools.init();
+    } else if (typeof initDrawingTools === 'function') {
+      console.log('Инициализация инструментов через initDrawingTools');
+      initDrawingTools();
+    } else {
+      console.warn('Функции для инициализации инструментов рисования не найдены');
+    }
+    
+    // Инициализируем историю
+    if (typeof window.drawingHistory?.init === 'function') {
+      console.log('Инициализация истории через window.drawingHistory.init');
+      window.drawingHistory.init();
+    }
+  } else {
+    console.error('Не удалось найти или создать модальное окно редактора');
+  }
+};
+
+/**
+ * Добавьте следующую функцию в файл js/drawing-editor.js после функции initDrawingEditor:
+ */
+
+/**
+ * Проверяет, открыт ли редактор рисования в режиме рисования на PDF
+ * @returns {boolean} - true, если редактор открыт в режиме рисования на PDF
+ */
+function isDrawingEditorInPdfMode() {
+  const modal = document.getElementById('drawing-modal');
+  if (!modal) return false;
+  
+  return modal.hasAttribute('data-pdf-drawing-mode');
+}
+
+// Экспортируем функцию
+window.isDrawingEditorInPdfMode = isDrawingEditorInPdfMode;
 }
 
 /**
