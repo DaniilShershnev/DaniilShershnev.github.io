@@ -515,6 +515,21 @@ function setupPreviewEvents() {
         '- Нажмите Ctrl+Enter для компиляции документа');
     });
   }
+  // Диспетчеризация событий компиляции
+  const originalCompileLatex = compileLatex;
+  compileLatex = function() {
+    // Генерируем событие перед компиляцией
+    document.dispatchEvent(new CustomEvent('before-latex-compile'));
+    
+    // Вызываем оригинальную функцию компиляции
+    const result = originalCompileLatex.apply(this, arguments);
+    
+    // После небольшой задержки, диспетчеризируем событие завершения компиляции
+    setTimeout(() => {
+      document.dispatchEvent(new CustomEvent('after-latex-compile'));
+    }, 1000); // Задержка для завершения рендеринга
+    
+    return result;
 }
 
 // Определяем глобальную функцию компиляции для доступа из других модулей
