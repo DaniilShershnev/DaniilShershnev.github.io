@@ -540,233 +540,273 @@ function updateDrawingElement(element, x, y) {
 }
 
 /**
+ * Рисует элемент на холсте
+ * @param {Object} element - элемент для рисования
+ */
+function drawElement(element) {
+  if (!drawingContext) return;
+  
+  // Сохраняем текущие настройки контекста
+  drawingContext.save();
+  
+  // Устанавливаем общие параметры
+  drawingContext.strokeStyle = element.color;
+  drawingContext.lineWidth = element.lineWidth;
+  drawingContext.lineJoin = 'round';
+  drawingContext.lineCap = 'round';
+  
+  // Рисуем в зависимости от типа элемента
+  switch (element.type) {
+    case 'freehand':
+      drawFreehandElement(element);
+      break;
+    case 'smoothFreehand':
+      drawSmoothFreehandElement(element);
+      break;
+    case 'line':
+      drawLineElement(element);
+      break;
+    case 'rectangle':
+      drawRectangleElement(element);
+      break;
+    case 'ellipse':
+      drawEllipseElement(element);
+      break;
+    case 'arrow':
+      drawArrowElement(element);
+      break;
+    case 'polygon':
+      drawPolygonElement(element);
+      break;
+    case 'bezier':
+      drawBezierElement(element);
+      break;
+    case 'text':
+      drawTextElement(element);
+      break;
+  }
+  
+  // Восстанавливаем настройки контекста
+  drawingContext.restore();
+}
+
+/**
+ * Рисует элемент свободной формы
+ * @param {Object} element - элемент для рисования
+ */
+function drawFreehandElement(element) {
+  if (!element.points || element.points.length < 2) return;
+  
+  drawingContext.beginPath();
+  drawingContext.moveTo(element.points[0].x, element.points[0].y);
+  
+  for (let i = 1; i < element.points.length; i++) {
+    drawingContext.lineTo(element.points[i].x, element.points[i].y);
+  }
+  
+  drawingContext.stroke();
+}
+
+/**
+ * Рисует сглаженный элемент свободной формы
+ * @param {Object} element - элемент для рисования
+ */
+function drawSmoothFreehandElement(element) {
+  if (!element.points || element.points.length < 2) return;
+  
+  drawingContext.beginPath();
+  drawingContext.moveTo(element.points[0].x, element.points[0].y);
+  
+  // Используем кривые Безье для сглаживания
+  for (let i = 1; i < element.points.length - 1; i++) {
+    const xc = (element.points[i].x + element.points[i + 1].x) / 2;
+    const yc = (element.points[i].y + element.points[i + 1].y) / 2;
+    drawingContext.quadraticCurveTo(element.points[i].x, element.points[i].y, xc, yc);
+  }
+  
+  // Последняя точка
+  if (element.points.length > 1) {
+    const lastPoint = element.points[element.points.length - 1];
+    drawingContext.lineTo(lastPoint.x, lastPoint.y);
+  }
+  
+  drawingContext.stroke();
+}
+
+/**
+ * Рисует линию
+ * @param {Object} element - элемент для рисования
+ */
+function drawLineElement(element) {
+  drawingContext.beginPath();
+  drawingContext.moveTo(element.startX, element.startY);
+  drawingContext.lineTo(element.endX, element.endY);
+  drawingContext.stroke();
+}
+
+/**
+ * Рисует прямоугольник
+ * @param {Object} element - элемент для рисования
+ */
+function drawRectangleElement(element) {
+  const x = Math.min(element.startX, element.endX);
+  const y = Math.min(element.startY, element.endY);
+  const width = Math.abs(element.endX - element.startX);
+  const height = Math.abs(element.endY - element.startY);
+  
+  drawingContext.beginPath();
+  drawingContext.rect(x, y, width, height);
+  
+  // Если есть заливка, то применяем её
+  if (element.fill && element.fill !== 'transparent') {
+    drawingContext.fillStyle = element.fill;
+    drawingContext.fill();
+  }
+  
+  drawingContext.stroke();
+}
+
+/**
+ * Рисует эллипс
+ * @param {Object} element - элемент для рисования
+ */
+function drawEllipseElement(element) {
+  const centerX = (element.startX + element.endX) / 2;
+  const centerY = (element.startY + element.endY) / 2;
+  const radiusX = Math.abs(element.endX - element.startX) / 2;
+  const radiusY = Math.abs(element.endY - element.startY) / 2;
+  
+  drawingContext.beginPath();
+  drawingContext.ellipse(centerX, centerY, radiusX, radiusY, 0, 0, 2 * Math.PI);
+  
+  // Если есть заливка, то применяем её
+  if (element.fill && element.fill !== 'transparent') {
+    drawingContext.fillStyle = element.fill;
+    drawingContext.fill();
+  }
+  
+  drawingContext.stroke();
+}
+
+/**
+ * Рисует стрелку
+ * @param {Object} element - элемент для рисования
+ */
+function drawArrowElement(element) {
+  // Рисуем линию
+  drawingContext.beginPath();
+  drawingContext.moveTo(element.startX, element.startY);
+  drawingContext.lineTo(element.endX, element.endY);
+  drawingContext.stroke();
+  
+  // Рисуем наконечник стрелки
+  const angle = Math.atan2(element.endY - element.startY, element.endX - element.startX);
+  const arrowSize = element.arrowSize || 10;
+  
+  drawingContext.beginPath();
+  drawingContext.moveTo(element.endX, element.endY);
+  drawingContext.lineTo(
+    element.endX - arrowSize * Math.cos(angle - Math.PI / 6),
+    element.endY - arrowSize * Math.sin(angle - Math.PI / 6)
+  );
+  drawingContext.lineTo(
+    element.endX - arrowSize * Math.cos(angle + Math.PI / 6),
+    element.endY - arrowSize * Math.sin(angle + Math.PI / 6)
+  );
+  drawingContext.closePath();
+  drawingContext.fillStyle = element.color;
+  drawingContext.fill();
+}
+
+/**
+ * Рисует многоугольник
+ * @param {Object} element - элемент для рисования
+ */
+function drawPolygonElement(element) {
+  if (!element.points || element.points.length < 2) return;
+  
+  drawingContext.beginPath();
+  drawingContext.moveTo(element.points[0].x, element.points[0].y);
+  
+  for (let i = 1; i < element.points.length; i++) {
+    drawingContext.lineTo(element.points[i].x, element.points[i].y);
+  }
+  
+  // Замыкаем многоугольник
+  drawingContext.closePath();
+  
+  // Если есть заливка, то применяем её
+  if (element.fill && element.fill !== 'transparent') {
+    drawingContext.fillStyle = element.fill;
+    drawingContext.fill();
+  }
+  
+  drawingContext.stroke();
+}
+
+/**
+ * Рисует кривую Безье
+ * @param {Object} element - элемент для рисования
+ */
+function drawBezierElement(element) {
+  if (!element.points || element.points.length < 2) return;
+  
+  drawingContext.beginPath();
+  drawingContext.moveTo(element.points[0].x, element.points[0].y);
+  
+  if (element.points.length === 2) {
+    // Если только 2 точки, рисуем линию
+    drawingContext.lineTo(element.points[1].x, element.points[1].y);
+  } else if (element.points.length === 3) {
+    // Если 3 точки, рисуем квадратичную кривую Безье
+    drawingContext.quadraticCurveTo(
+      element.points[1].x, element.points[1].y,
+      element.points[2].x, element.points[2].y
+    );
+  } else if (element.points.length === 4) {
+    // Если 4 точки, рисуем кубическую кривую Безье
+    drawingContext.bezierCurveTo(
+      element.points[1].x, element.points[1].y,
+      element.points[2].x, element.points[2].y,
+      element.points[3].x, element.points[3].y
+    );
+  } else {
+    // Для более сложных кривых используем составные кривые Безье
+    for (let i = 1; i < element.points.length - 2; i += 3) {
+      drawingContext.bezierCurveTo(
+        element.points[i].x, element.points[i].y,
+        element.points[i + 1].x, element.points[i + 1].y,
+        element.points[i + 2].x, element.points[i + 2].y
+      );
+    }
+    
+    // Обрабатываем оставшиеся точки
+    const remaining = (element.points.length - 1) % 3;
+    if (remaining === 1) {
+      drawingContext.lineTo(element.points[element.points.length - 1].x, element.points[element.points.length - 1].y);
+    } else if (remaining === 2) {
+      drawingContext.quadraticCurveTo(
+        element.points[element.points.length - 2].x, element.points[element.points.length - 2].y,
+        element.points[element.points.length - 1].x, element.points[element.points.length - 1].y
+      );
+    }
+  }
+  
+  drawingContext.stroke();
+}
+
+/**
+ * Рисует текст
+ * @param {Object} element - элемент для рисования
+ */
+function drawTextElement(element) {
+  drawingContext.font = `${element.fontSize}px ${element.fontFamily || 'Arial'}`;
+  drawingContext.fillStyle = element.color;
+  drawingContext.fillText(element.text, element.x, element.y);
+}
+
+/**
  * Добавляет точку к многоточечной фигуре (многоугольник или кривая Безье)
  * @param {number} x - координата X
  * @param {number} y - координата Y
  */
-function addPointToMultiPointShape(x, y) {
-  // Применяем привязку к сетке, если она включена
-  if (toolSettings.snapToGrid) {
-    x = Math.round(x / toolSettings.gridSize) * toolSettings.gridSize;
-    y = Math.round(y / toolSettings.gridSize) * toolSettings.gridSize;
-  }
-  
-  if (!currentElement) {
-    // Если текущего элемента нет, создаем новый
-    currentElement = createDrawingElement(x, y);
-  } else {
-    // Добавляем новую точку к существующему элементу
-    currentElement.points.push({ x, y });
-  }
-  
-  // Перерисовываем canvas
-  redrawCanvas();
-}
-
-/**
- * Выбирает элемент по координатам
- * @param {number} x - координата X
- * @param {number} y - координата Y
- * @returns {Object|null} - выбранный элемент или null, если ничего не выбрано
- */
-function selectElementAt(x, y) {
-  // Ищем элемент, содержащий точку (x, y)
-  for (let i = drawingElements.length - 1; i >= 0; i--) {
-    const element = drawingElements[i];
-    
-    // Проверяем, находится ли точка внутри элемента
-    if (isPointInElement(x, y, element)) {
-      return { index: i, element: element };
-    }
-  }
-  
-  return null;
-}
-
-/**
- * Проверяет, находится ли точка внутри элемента
- * @param {number} x - координата X
- * @param {number} y - координата Y
- * @param {Object} element - элемент для проверки
- * @returns {boolean} - true, если точка находится внутри элемента
- */
-function isPointInElement(x, y, element) {
-  const tolerance = element.lineWidth + 5;
-  
-  switch (element.type) {
-    case 'freehand':
-    case 'smoothFreehand':
-      // Проверяем расстояние до каждого сегмента линии
-      for (let i = 1; i < element.points.length; i++) {
-        const p1 = element.points[i - 1];
-        const p2 = element.points[i];
-        
-        if (distanceToLine(x, y, p1.x, p1.y, p2.x, p2.y) <= tolerance) {
-          return true;
-        }
-      }
-      return false;
-      
-    case 'line':
-    case 'arrow':
-      return distanceToLine(x, y, element.startX, element.startY, element.endX, element.endY) <= tolerance;
-      
-    case 'rectangle':
-      // Проверяем, находится ли точка внутри прямоугольника или рядом с его границей
-      const minX = Math.min(element.startX, element.endX);
-      const maxX = Math.max(element.startX, element.endX);
-      const minY = Math.min(element.startY, element.endY);
-      const maxY = Math.max(element.startY, element.endY);
-      
-      if (element.fill !== 'transparent' && x >= minX && x <= maxX && y >= minY && y <= maxY) {
-        return true; // Точка внутри прямоугольника с заливкой
-      }
-      
-      // Проверяем близость к каждой стороне прямоугольника
-      return (
-        distanceToLine(x, y, minX, minY, maxX, minY) <= tolerance || // Верхняя сторона
-        distanceToLine(x, y, maxX, minY, maxX, maxY) <= tolerance || // Правая сторона
-        distanceToLine(x, y, maxX, maxY, minX, maxY) <= tolerance || // Нижняя сторона
-        distanceToLine(x, y, minX, maxY, minX, minY) <= tolerance    // Левая сторона
-      );
-      
-    case 'ellipse':
-      const centerX = (element.startX + element.endX) / 2;
-      const centerY = (element.startY + element.endY) / 2;
-      const radiusX = Math.abs(element.endX - element.startX) / 2;
-      const radiusY = Math.abs(element.endY - element.startY) / 2;
-      
-      // Нормализуем точку относительно центра и радиусов эллипса
-      const dx = (x - centerX) / radiusX;
-      const dy = (y - centerY) / radiusY;
-      const distance = Math.sqrt(dx * dx + dy * dy);
-      
-      if (element.fill !== 'transparent' && distance <= 1) {
-        return true; // Точка внутри эллипса с заливкой
-      }
-      
-      // Точка находится рядом с границей эллипса
-      return Math.abs(distance - 1) * Math.min(radiusX, radiusY) <= tolerance;
-      
-    case 'polygon':
-    case 'bezier':
-      // Для многоугольника и кривой Безье проверка сложнее
-      // Сначала проверяем, находится ли точка внутри многоугольника
-      if (element.fill !== 'transparent' && isPointInPolygon(x, y, element.points)) {
-        return true;
-      }
-      
-      // Затем проверяем близость к каждой стороне
-      for (let i = 1; i < element.points.length; i++) {
-        const p1 = element.points[i - 1];
-        const p2 = element.points[i];
-        
-        if (distanceToLine(x, y, p1.x, p1.y, p2.x, p2.y) <= tolerance) {
-          return true;
-        }
-      }
-      
-      // Для замкнутого многоугольника проверяем также последнюю сторону
-      if (element.type === 'polygon' && element.points.length > 2) {
-        const first = element.points[0];
-        const last = element.points[element.points.length - 1];
-        
-        if (distanceToLine(x, y, last.x, last.y, first.x, first.y) <= tolerance) {
-          return true;
-        }
-      }
-      
-      return false;
-      
-    case 'text':
-      // Для текста создаем прямоугольник, основанный на положении и размере текста
-      const textWidth = element.text.length * element.fontSize * 0.6;
-      const textHeight = element.fontSize * 1.2;
-      
-      return (
-        x >= element.x && x <= element.x + textWidth &&
-        y >= element.y - textHeight && y <= element.y
-      );
-      
-    default:
-      return false;
-  }
-}
-
-/**
- * Рассчитывает расстояние от точки до отрезка
- * @param {number} x - координата X точки
- * @param {number} y - координата Y точки
- * @param {number} x1 - координата X начала отрезка
- * @param {number} y1 - координата Y начала отрезка
- * @param {number} x2 - координата X конца отрезка
- * @param {number} y2 - координата Y конца отрезка
- * @returns {number} - расстояние
- */
-function distanceToLine(x, y, x1, y1, x2, y2) {
-  const A = x - x1;
-  const B = y - y1;
-  const C = x2 - x1;
-  const D = y2 - y1;
-  
-  const dot = A * C + B * D;
-  const lenSq = C * C + D * D;
-  let param = -1;
-  
-  if (lenSq !== 0) {
-    param = dot / lenSq;
-  }
-  
-  let xx, yy;
-  
-  if (param < 0) {
-    xx = x1;
-    yy = y1;
-  } else if (param > 1) {
-    xx = x2;
-    yy = y2;
-  } else {
-    xx = x1 + param * C;
-    yy = y1 + param * D;
-  }
-  
-  const dx = x - xx;
-  const dy = y - yy;
-  
-  return Math.sqrt(dx * dx + dy * dy);
-}
-
-/**
- * Проверяет, находится ли точка внутри многоугольника
- * @param {number} x - координата X точки
- * @param {number} y - координата Y точки
- * @param {Array} points - массив точек многоугольника
- * @returns {boolean} - true, если точка внутри многоугольника
- */
-function isPointInPolygon(x, y, points) {
-  if (points.length < 3) return false;
-  
-  let inside = false;
-  for (let i = 0, j = points.length - 1; i < points.length; j = i++) {
-    const xi = points[i].x, yi = points[i].y;
-    const xj = points[j].x, yj = points[j].y;
-    
-    const intersect = ((yi > y) !== (yj > y)) &&
-      (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
-    
-    if (intersect) inside = !inside;
-  }
-  
-  return inside;
-}
-
-// Экспортируем функции для использования в других файлах
-window.drawingTools = {
-  init: initDrawingTools,
-  selectTool: selectTool,
-  createElement: createDrawingElement,
-  updateElement: updateDrawingElement,
-  addPointToMultiPointShape: addPointToMultiPointShape,
-  finishMultiPointShape: finishMultiPointShape,
-  selectElementAt: selectElementAt
-};
