@@ -1,41 +1,42 @@
 /**
- * Вспомогательные функции для всего приложения
+ * Вспомогательные функции для редактора рисования и других компонентов
  */
 
-// Функция открытия редактора рисования
-function openDrawingEditor() {
-  console.log('Открываем редактор рисования');
-  
-  // Проверяем, существует ли модальное окно
-  if (!document.getElementById('drawing-modal')) {
-    console.log('Модальное окно редактора рисования не найдено, создаем его');
-    if (typeof initDrawingUI === 'function') {
-      initDrawingUI();
-    } else {
-      console.error('Функция initDrawingUI не определена');
-    }
+// Функция для безопасного вызова других функций
+function safeCall(fn, ...args) {
+  if (typeof fn === 'function') {
+    return fn(...args);
   }
-  
-  // Отображаем модальное окно
-  const modal = document.getElementById('drawing-modal');
-  if (modal) {
-    modal.style.display = 'block';
-  }
-  
-  // Инициализируем canvas
-  if (typeof initDrawingCanvas === 'function') {
-    initDrawingCanvas();
-  } else {
-    console.warn('Функция initDrawingCanvas не определена');
-  }
-  
-  // Инициализируем инструменты
-  if (typeof initDrawingTools === 'function') {
-    initDrawingTools();
-  } else {
-    console.warn('Функция initDrawingTools не определена');
-  }
+  return undefined;
 }
 
-// Глобальная функция для доступа к функции открытия редактора
-window.openDrawingEditor = openDrawingEditor;
+// Функция для проверки существования элемента
+function elementExists(selector) {
+  return document.querySelector(selector) !== null;
+}
+
+// Функция для отображения модальных окон
+function showModal(modalId) {
+  const modal = document.getElementById(modalId);
+  if (modal) {
+    modal.style.display = 'block';
+    return true;
+  }
+  return false;
+}
+
+// Функция для скрытия модальных окон
+function hideModal(modalId) {
+  const modal = document.getElementById(modalId);
+  if (modal) {
+    modal.style.display = 'none';
+    return true;
+  }
+  return false;
+}
+
+// Глобальные функции
+window.safeCall = safeCall;
+window.elementExists = elementExists;
+window.showModal = showModal;
+window.hideModal = hideModal;
