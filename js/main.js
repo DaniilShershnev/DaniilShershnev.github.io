@@ -41,6 +41,11 @@ document.addEventListener('DOMContentLoaded', function() {
  * Настройка обработчиков событий для UI элементов
  */
 function setupUIEventHandlers() {
+  if (typeof window.drawingHistory?.init === 'function') {
+  window.drawingHistory.init();
+} else {
+  console.warn('Функция window.drawingHistory.init не определена');
+}
   // Установка обработчиков для панели инструментов
   if (typeof setupToolbarButtons === 'function') {
     setupToolbarButtons();
