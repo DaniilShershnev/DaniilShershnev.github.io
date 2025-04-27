@@ -17,6 +17,53 @@
     
     <!-- MathJax -->
     <script src="https://cdn.jsdelivr.net/npm/mathjax@3.2.0/es5/tex-mml-chtml.js"></script>
+    <!-- Стили для функции рисования на PDF -->
+<style>
+  .pdf-interaction-layer {
+    cursor: crosshair;
+  }
+  
+  .pdf-drawing-instructions {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 1000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  
+  .instructions-content {
+    background-color: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+    max-width: 500px;
+    text-align: center;
+  }
+  
+  .instructions-content h3 {
+    margin-top: 0;
+    color: #3498db;
+  }
+  
+  .instructions-content button {
+    background-color: #3498db;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    margin-top: 15px;
+  }
+  
+  .instructions-content button:hover {
+    background-color: #2980b9;
+  }
+</style>
 </head>
 <body>
     <!-- Заголовок -->
@@ -219,6 +266,11 @@
     <script src="js/drawing-editor.js"></script>
     <script src="js/image-upload.js"></script>
     <script src="js/main.js"></script>
-    
+    <!-- Скрипты для функции рисования на PDF -->
+<script src="js/pdf-drawing/position-mapping.js"></script>
+<script src="js/pdf-drawing/drawing-overlay.js"></script>
+<script src="js/pdf-drawing/pdf-interaction-layer.js"></script>
+<script src="js/pdf-drawing/insertion-handler.js"></script>
+<script src="js/pdf-drawing/pdf-drawing.js"></script>
 </body>
 </html>
