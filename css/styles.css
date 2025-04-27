@@ -682,4 +682,58 @@ input[type="file"] {
   padding: 3px 8px;
   font-size: 12px;
 }
+  /* Стили для TikZ-контейнеров */
+.tikz-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 15px auto;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+/* Стили для канвы TikZ-рисунка */
+.tikz-container canvas {
+  background-color: white;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+  max-width: 100%;
+}
+
+/* Стили для полноэкранного редактора */
+.drawing-modal-content.fullscreen {
+  width: 95vw !important;
+  height: 90vh !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+}
+
+.drawing-modal-content.fullscreen .drawing-canvas-container {
+  height: calc(100% - 120px) !important;
+}
+
+/* Стили для кнопок отмены/повтора */
+#drawing-undo, #drawing-redo {
+  margin-right: 5px;
+}
+
+/* Улучшенные стили для инструментов рисования */
+.drawing-tools-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  max-width: 300px;
+}
+
+.drawing-tool {
+  min-width: 40px;
+  min-height: 40px;
+}
+
+/* Индикатор активного инструмента с улучшенным стилем */
+.drawing-tool.active {
+  background-color: #2196F3;
+  color: white;
+  border-color: #0d6efd;
+  box-shadow: 0 0 3px rgba(0, 123, 255, 0.5);
+}
 }
