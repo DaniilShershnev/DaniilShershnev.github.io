@@ -2,7 +2,23 @@
  * Модуль пользовательского интерфейса редактора рисования
  * Отвечает за создание и управление UI элементами редактора рисования
  */
+let isDrawingUIInitialized = false;
 
+function initDrawingUI() {
+  // Если UI уже инициализирован, просто показываем его
+  if (isDrawingUIInitialized) {
+    const modal = document.getElementById('drawing-modal');
+    if (modal) {
+      modal.style.display = 'block';
+      return;
+    }
+  }
+  
+  // Иначе создаем UI с нуля
+  createDrawingModal();
+  setupDrawingUIEvents();
+  isDrawingUIInitialized = true;
+}
 // Объявим переменную для доступа к функции закрытия редактора
 let closeDrawingEditor;
 
