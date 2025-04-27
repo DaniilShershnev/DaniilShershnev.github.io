@@ -12,7 +12,11 @@ let drawingEditor;
  */
 function initDrawingEditor() {
   // Инициализируем пользовательский интерфейс
-  initDrawingUI();
+  if (typeof initDrawingUI === 'function') {
+    initDrawingUI();
+  } else {
+    console.warn('Функция initDrawingUI не определена');
+  }
   
   // Создаем объект редактора
   drawingEditor = {
@@ -27,10 +31,18 @@ function initDrawingEditor() {
       document.getElementById('drawing-modal').style.display = 'block';
       
       // Инициализируем canvas при открытии
-      initDrawingCanvas();
+      if (typeof initDrawingCanvas === 'function') {
+        initDrawingCanvas();
+      } else {
+        console.warn('Функция initDrawingCanvas не определена');
+      }
       
       // Инициализируем инструменты
-      initDrawingTools();
+      if (typeof initDrawingTools === 'function') {
+        initDrawingTools();
+      } else {
+        console.warn('Функция initDrawingTools не определена');
+      }
     },
     
     // Закрывает редактор рисования без сохранения
@@ -39,12 +51,21 @@ function initDrawingEditor() {
       document.getElementById('drawing-modal').style.display = 'none';
       
       // Очищаем canvas
-      clearDrawingCanvas();
+      if (typeof clearDrawingCanvas === 'function') {
+        clearDrawingCanvas();
+      } else {
+        console.warn('Функция clearDrawingCanvas не определена');
+      }
     },
     
     // Вставляет сгенерированный TikZ-код в редактор LaTeX
     insertDrawing: function() {
       // Получаем TikZ-код
+      if (typeof convertToTikZ !== 'function') {
+        console.warn('Функция convertToTikZ не определена');
+        return;
+      }
+      
       const tikzCode = convertToTikZ();
       
       // Получаем позицию курсора в редакторе LaTeX
@@ -60,24 +81,25 @@ function initDrawingEditor() {
       this.close();
       
       // Обновляем статус
-      updateStatus('Рисунок вставлен');
+      if (typeof updateStatus === 'function') {
+        updateStatus('Рисунок вставлен');
+      } else {
+        console.warn('Функция updateStatus не определена');
+      }
     }
-    // Интегрируем улучшенный UI и инструменты
-if (typeof window.drawingCanvas?.init === 'function') {
-  window.drawingCanvas.init();
-} else {
-  console.warn('Функция window.drawingCanvas.init не определена');
-}
-
-if (typeof window.drawingTools?.init === 'function') {
-  window.drawingTools.init();
-} else {
-  console.warn('Функция window.drawingTools.init не определена');
-}
   };
   
   // Устанавливаем обработчики событий
   setupDrawingEditorEvents();
+  
+  // Делаем функцию открытия редактора доступной глобально
+  window.openDrawingEditor = function() {
+    if (drawingEditor) {
+      drawingEditor.open();
+    } else {
+      console.error('Редактор рисования не инициализирован');
+    }
+  };
 }
 
 /**
@@ -85,16 +107,32 @@ if (typeof window.drawingTools?.init === 'function') {
  */
 function setupDrawingEditorEvents() {
   // Кнопка открытия редактора
-  document.getElementById('drawing-btn').addEventListener('click', function() {
-    openDrawingEditor();
-  });
-}
-
-/**
- * Открывает редактор рисования
- */
-function openDrawingEditor() {
-  if (drawingEditor) {
-    drawingEditor.open();
+  const drawingBtn = document.getElementById('drawing-btn');
+  if (drawingBtn) {
+    drawingBtn.addEventListener('click', function() {
+      if (typeof openDrawingEditor === 'function') {
+        openDrawingEditor();
+      } else if (drawingEditor) {
+        drawingEditor.open();
+      } else {
+        console.error('Функция openDrawingEditor или объект drawingEditor не определены');
+      }
+    });
+  } else {
+    console.warn('Элемент drawing-btn не найден');
   }
 }
+
+// Экспортируем функцию в глобальную область видимости
+window.initDrawingEditor = initDrawingEditor;
+window.openDrawingEditor = function() {
+  if (drawingEditor) {
+    drawingEditor.open();
+  } else {
+    console.log('Инициализация редактора рисования...');
+    initDrawingEditor();
+    if (drawingEditor) {
+      drawingEditor.open();
+    }
+  }
+};
