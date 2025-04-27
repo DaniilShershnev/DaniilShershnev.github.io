@@ -41,6 +41,18 @@ document.addEventListener('DOMContentLoaded', function() {
  * Настройка обработчиков событий для UI элементов
  */
 function setupUIEventHandlers() {
+  const drawingBtn = document.getElementById('drawing-btn');
+if (drawingBtn) {
+  drawingBtn.addEventListener('click', function() {
+    console.log('Кнопка рисования нажата');
+    if (typeof openDrawingEditor === 'function') {
+      openDrawingEditor();
+    } else {
+      console.error('Функция openDrawingEditor не определена');
+    }
+  });
+}
+  
   if (typeof window.drawingHistory?.init === 'function') {
   window.drawingHistory.init();
 } else {
