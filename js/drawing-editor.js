@@ -1,56 +1,36 @@
 /**
- * Вспомогательный файл для редактора рисования
- * Чтобы избежать ошибок, вся функциональность перенесена в helpers.js
+ * drawing-editor.js
+ * Отвечает за инициализацию и координацию работы редактора рисования
  */
 
-// Предотвращаем ошибки, создавая пустую функцию
+/**
+ * Инициализирует редактор рисования
+ */
 function initDrawingEditor() {
-  console.log("Инициализация редактора рисования из drawing-editor.js (пустая функция)");
+  console.log("Инициализация редактора рисования");
   
   // Убеждаемся, что функция openDrawingEditor доступна глобально
-  if (typeof window.openDrawingEditor !== 'function') {
-    window.openDrawingEditor = function() {
-      console.log("Вызов функции openDrawingEditor из drawing-editor.js");
-      
-      // Проверяем, существует ли модальное окно
-      if (!document.getElementById('drawing-modal')) {
-        console.log('Модальное окно редактора не найдено, создаем его');
-        if (typeof initDrawingUI === 'function') {
-          initDrawingUI();
-        } else {
-          console.error('Функция initDrawingUI не определена');
-          return;
-        }
-      }
-      
-      // Отображаем модальное окно
-      const modal = document.getElementById('drawing-modal');
-      if (modal) {
-        modal.style.display = 'block';
-        
-        // Инициализируем canvas
-        if (typeof window.drawingCanvas?.init === 'function') {
-          window.drawingCanvas.init();
-        } else if (typeof initDrawingCanvas === 'function') {
-          initDrawingCanvas();
-        } else {
-          console.warn('Функции для инициализации canvas не найдены');
-        }
-        
-        // Инициализируем инструменты
-        if (typeof window.drawingTools?.init === 'function') {
-          window.drawingTools.init();
-        } else if (typeof initDrawingTools === 'function') {
-          initDrawingTools();
-        } else {
-          console.warn('Функции для инициализации инструментов рисования не найдены');
-        }
+  window.openDrawingEditor = function() {
+    console.log("Вызвана функция openDrawingEditor");
+    
+    // Проверяем, существует ли модальное окно
+    if (!document.getElementById('drawing-modal')) {
+      console.log('Модальное окно редактора не найдено, создаем его');
+      if (typeof initDrawingUI === 'function') {
+        initDrawingUI();
       } else {
-        console.error('Не удалось найти или создать модальное окно редактора');
+        console.error('Функция initDrawingUI не определена');
+        return;
       }
-    };
-  }
-}
-
-// Экспортируем функцию в глобальную область видимости
-window.initDrawingEditor = initDrawingEditor;
+    }
+    
+    // Отображаем модальное окно
+    const modal = document.getElementById('drawing-modal');
+    if (modal) {
+      modal.style.display = 'block';
+      
+      // Инициализируем canvas
+      if (typeof window.drawingCanvas?.init === 'function') {
+        console.log('Инициализация canvas через window.drawingCanvas.init');
+        window.drawingCanvas.init();
+      } else if (typeof initDrawingCanvas === 'function') {
