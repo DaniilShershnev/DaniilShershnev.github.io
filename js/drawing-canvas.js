@@ -23,9 +23,26 @@ let lastSampledX = 0, lastSampledY = 0; // Последние выборочны
  * Инициализирует canvas для рисования
  */
 function initDrawingCanvas() {
+  console.log('Инициализация canvas для рисования');
+  
   // Получаем canvas и его контекст
   drawingCanvas = document.getElementById('drawing-canvas');
+  
+  if (!drawingCanvas) {
+    console.error('Элемент drawing-canvas не найден');
+    return;
+  }
+  
+  // Делаем drawingCanvas глобально доступным
+  window.drawingCanvas = drawingCanvas;
+  
   drawingContext = drawingCanvas.getContext('2d');
+  
+  // Делаем drawingContext глобально доступным
+  window.drawingContext = drawingContext;
+  
+  // Делаем drawingElements глобально доступным
+  window.drawingElements = drawingElements;
   
   // Включаем сглаживание
   drawingContext.imageSmoothingEnabled = true;
@@ -39,6 +56,8 @@ function initDrawingCanvas() {
   
   // Устанавливаем обработчики событий
   setupCanvasEvents();
+  
+  console.log('Canvas инициализирован успешно');
 }
 
 /**
@@ -46,14 +65,21 @@ function initDrawingCanvas() {
  */
 function resetCanvasSize() {
   const container = document.getElementById('drawing-canvas-container');
-  if (!container || !drawingCanvas) return;
+  if (!container || !drawingCanvas) {
+    console.error('Контейнер или canvas не найдены');
+    return;
+  }
   
   // Получаем размеры контейнера
   const containerRect = container.getBoundingClientRect();
   
+  console.log('Размеры контейнера:', containerRect.width, 'x', containerRect.height);
+  
   // Устанавливаем размеры canvas
   drawingCanvas.width = containerRect.width;
   drawingCanvas.height = containerRect.height;
+  
+  console.log('Установлены размеры canvas:', drawingCanvas.width, 'x', drawingCanvas.height);
   
   // Перерисовываем canvas после изменения размеров
   redrawCanvas();
@@ -63,13 +89,21 @@ function resetCanvasSize() {
  * Очищает canvas и сбрасывает все элементы
  */
 function clearDrawingCanvas() {
-  if (!drawingContext) return;
+  if (!drawingContext) {
+    console.error('Контекст canvas не инициализирован');
+    return;
+  }
+  
+  console.log('Очистка canvas');
   
   // Очищаем canvas
   drawingContext.clearRect(0, 0, drawingCanvas.width, drawingCanvas.height);
   
   // Сбрасываем массив элементов
   drawingElements = [];
+  
+  // Обновляем глобальную переменную
+  window.drawingElements = drawingElements;
   
   // Перерисовываем сетку и оси
   drawGrid();
@@ -135,6 +169,13 @@ function drawGrid() {
  * Устанавливает обработчики событий для canvas
  */
 function setupCanvasEvents() {
+  console.log('Настройка обработчиков событий для canvas');
+  
+  if (!drawingCanvas) {
+    console.error('Canvas не инициализирован');
+    return;
+  }
+  
   // События мыши для desktop
   drawingCanvas.addEventListener('mousedown', startDrawing);
   drawingCanvas.addEventListener('mousemove', draw);
@@ -158,6 +199,8 @@ function setupCanvasEvents() {
   window.addEventListener('resize', function() {
     resetCanvasSize();
   });
+  
+  console.log('Обработчики событий для canvas настроены');
 }
 
 /**
@@ -165,6 +208,7 @@ function setupCanvasEvents() {
  * @param {Event} e - событие мыши
  */
 function startDrawing(e) {
+  console.log('Начало рисования');
   isDrawing = true;
   
   // Получаем координаты
@@ -172,15 +216,26 @@ function startDrawing(e) {
   lastX = e.clientX - rect.left;
   lastY = e.clientY - rect.top;
   
+  console.log('Начальные координаты:', lastX, lastY);
+  
   // Сбрасываем последние выборочные точки
   lastSampledX = lastX;
   lastSampledY = lastY;
   
   // Создаем новый элемент в зависимости от текущего инструмента
-  currentElement = createDrawingElement(lastX, lastY);
+  if (typeof window.drawingTools?.createElement === 'function') {
+    currentElement = window.drawingTools.createElement(lastX, lastY);
+  } else if (typeof createDrawingElement === 'function') {
+    currentElement = createDrawingElement(lastX, lastY);
+  } else {
+    console.error('Функция createDrawingElement не найдена');
+    return;
+  }
+  
+  console.log('Создан новый элемент:', currentElement);
   
   // Если используется инструмент свободного рисования, добавляем первую точку
-  if (currentElement.type === 'freehand') {
+  if (currentElement && currentElement.type === 'freehand') {
     currentElement.points.push({ x: lastX, y: lastY });
   }
 }
@@ -205,7 +260,13 @@ function draw(e) {
   // Обновляем элемент только если прошли минимальное расстояние
   if (distance >= minPointDistance) {
     // Обновляем элемент в зависимости от текущего инструмента
-    updateDrawingElement(currentElement, currentX, currentY);
+    if (typeof window.drawingTools?.updateElement === 'function') {
+      window.drawingTools.updateElement(currentElement, currentX, currentY);
+    } else if (typeof updateDrawingElement === 'function') {
+      updateDrawingElement(currentElement, currentX, currentY);
+    } else {
+      console.error('Функция updateDrawingElement не найдена');
+    }
     
     // Обновляем последние выборочные точки
     lastSampledX = currentX;
@@ -226,6 +287,8 @@ function draw(e) {
 function stopDrawing() {
   if (!isDrawing) return;
   
+  console.log('Завершение рисования');
+  
   // Добавляем элемент в список
   if (currentElement) {
     // Для свободного рисования применяем сглаживание
@@ -234,6 +297,13 @@ function stopDrawing() {
     }
     
     drawingElements.push(currentElement);
+    
+    // Обновляем глобальную переменную
+    window.drawingElements = drawingElements;
+    
+    console.log('Элемент добавлен в список');
+    console.log('Всего элементов:', drawingElements.length);
+    
     currentElement = null;
     
     // Если есть функция истории, сохраняем состояние
@@ -373,7 +443,10 @@ function handlePointerUp(e) {
  * Перерисовывает весь canvas
  */
 function redrawCanvas() {
-  if (!drawingContext) return;
+  if (!drawingContext) {
+    console.error('Контекст canvas не инициализирован');
+    return;
+  }
   
   // Очищаем canvas
   drawingContext.clearRect(0, 0, drawingCanvas.width, drawingCanvas.height);
@@ -381,14 +454,27 @@ function redrawCanvas() {
   // Рисуем сетку
   drawGrid();
   
+  // Проверяем доступность функции drawElement
+  let drawFunc;
+  if (typeof window.drawElement === 'function') {
+    drawFunc = window.drawElement;
+  } else if (typeof window.drawingTools?.drawElement === 'function') {
+    drawFunc = window.drawingTools.drawElement;
+  } else {
+    console.error('Функция drawElement не найдена');
+    return;
+  }
+  
   // Рисуем все элементы
-  drawingElements.forEach(element => {
-    drawElement(element);
-  });
+  if (drawingElements && drawingElements.length > 0) {
+    drawingElements.forEach(element => {
+      drawFunc(element);
+    });
+  }
   
   // Рисуем текущий элемент, если он есть
   if (currentElement) {
-    drawElement(currentElement);
+    drawFunc(currentElement);
   }
 }
 
@@ -435,3 +521,6 @@ window.drawingCanvas = {
   redraw: redrawCanvas,
   setFullscreenMode: setFullscreenMode
 };
+
+// Делаем функцию redrawCanvas доступной глобально
+window.redrawCanvas = redrawCanvas;
