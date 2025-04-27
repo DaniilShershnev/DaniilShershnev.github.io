@@ -1,5 +1,5 @@
 /**
- * Модуль Canvas для редактора рисования
+ * drawing-canvas.js
  * Отвечает за работу с Canvas и базовыми функциями рисования
  */
 
@@ -14,6 +14,11 @@ let drawingElements = [];
 // Текущий элемент, который рисуется
 let currentElement = null;
 
+// Параметры сглаживания линий
+const smoothingFactor = 0.3; // Фактор сглаживания (от 0 до 1)
+const minPointDistance = 5; // Минимальное расстояние между точками при рисовании
+let lastSampledX = 0, lastSampledY = 0; // Последние выборочные точки
+
 /**
  * Инициализирует canvas для рисования
  */
@@ -21,6 +26,10 @@ function initDrawingCanvas() {
   // Получаем canvas и его контекст
   drawingCanvas = document.getElementById('drawing-canvas');
   drawingContext = drawingCanvas.getContext('2d');
+  
+  // Включаем сглаживание
+  drawingContext.imageSmoothingEnabled = true;
+  drawingContext.imageSmoothingQuality = 'high';
   
   // Устанавливаем размеры canvas
   resetCanvasSize();
@@ -37,8 +46,17 @@ function initDrawingCanvas() {
  */
 function resetCanvasSize() {
   const container = document.getElementById('drawing-canvas-container');
-  drawingCanvas.width = container.clientWidth;
-  drawingCanvas.height = container.clientHeight;
+  if (!container || !drawingCanvas) return;
+  
+  // Получаем размеры контейнера
+  const containerRect = container.getBoundingClientRect();
+  
+  // Устанавливаем размеры canvas
+  drawingCanvas.width = containerRect.width;
+  drawingCanvas.height = containerRect.height;
+  
+  // Перерисовываем canvas после изменения размеров
+  redrawCanvas();
 }
 
 /**
@@ -53,8 +71,13 @@ function clearDrawingCanvas() {
   // Сбрасываем массив элементов
   drawingElements = [];
   
-  // Перерисовываем сетку и оси (опционально)
+  // Перерисовываем сетку и оси
   drawGrid();
+  
+  // Если есть функция истории, сохраняем состояние
+  if (window.drawingHistory && typeof window.drawingHistory.saveState === 'function') {
+    window.drawingHistory.saveState(drawingElements);
+  }
 }
 
 /**
@@ -130,6 +153,11 @@ function setupCanvasEvents() {
     drawingCanvas.addEventListener('pointerup', handlePointerUp);
     drawingCanvas.addEventListener('pointerout', handlePointerUp);
   }
+  
+  // Добавляем обработчик изменения размера окна
+  window.addEventListener('resize', function() {
+    resetCanvasSize();
+  });
 }
 
 /**
@@ -144,11 +172,15 @@ function startDrawing(e) {
   lastX = e.clientX - rect.left;
   lastY = e.clientY - rect.top;
   
+  // Сбрасываем последние выборочные точки
+  lastSampledX = lastX;
+  lastSampledY = lastY;
+  
   // Создаем новый элемент в зависимости от текущего инструмента
   currentElement = createDrawingElement(lastX, lastY);
   
   // Если используется инструмент свободного рисования, добавляем первую точку
-  if (currentTool === 'freehand') {
+  if (currentElement.type === 'freehand') {
     currentElement.points.push({ x: lastX, y: lastY });
   }
 }
@@ -165,13 +197,25 @@ function draw(e) {
   const currentX = e.clientX - rect.left;
   const currentY = e.clientY - rect.top;
   
-  // Обновляем элемент в зависимости от текущего инструмента
-  updateDrawingElement(currentElement, currentX, currentY);
+  // Рассчитываем расстояние от последней выборочной точки
+  const dx = currentX - lastSampledX;
+  const dy = currentY - lastSampledY;
+  const distance = Math.sqrt(dx * dx + dy * dy);
   
-  // Перерисовываем все
-  redrawCanvas();
+  // Обновляем элемент только если прошли минимальное расстояние
+  if (distance >= minPointDistance) {
+    // Обновляем элемент в зависимости от текущего инструмента
+    updateDrawingElement(currentElement, currentX, currentY);
+    
+    // Обновляем последние выборочные точки
+    lastSampledX = currentX;
+    lastSampledY = currentY;
+    
+    // Перерисовываем все
+    redrawCanvas();
+  }
   
-  // Обновляем последние координаты
+  // Обновляем последние координаты для следующего события
   lastX = currentX;
   lastY = currentY;
 }
@@ -184,11 +228,50 @@ function stopDrawing() {
   
   // Добавляем элемент в список
   if (currentElement) {
+    // Для свободного рисования применяем сглаживание
+    if (currentElement.type === 'freehand' && currentElement.points.length > 2) {
+      currentElement.points = smoothPath(currentElement.points);
+    }
+    
     drawingElements.push(currentElement);
     currentElement = null;
+    
+    // Если есть функция истории, сохраняем состояние
+    if (window.drawingHistory && typeof window.drawingHistory.saveState === 'function') {
+      window.drawingHistory.saveState(drawingElements);
+    }
   }
   
   isDrawing = false;
+  
+  // Перерисовываем canvas
+  redrawCanvas();
+}
+
+/**
+ * Сглаживает путь с помощью алгоритма сглаживания
+ * @param {Array} points - массив точек пути
+ * @returns {Array} - сглаженный массив точек
+ */
+function smoothPath(points) {
+  if (points.length <= 2) return points;
+  
+  const smoothed = [points[0]];
+  
+  for (let i = 1; i < points.length - 1; i++) {
+    const prev = points[i - 1];
+    const current = points[i];
+    const next = points[i + 1];
+    
+    // Вычисляем средние координаты
+    const smoothX = current.x + (next.x - prev.x) * smoothingFactor;
+    const smoothY = current.y + (next.y - prev.y) * smoothingFactor;
+    
+    smoothed.push({ x: smoothX, y: smoothY });
+  }
+  
+  smoothed.push(points[points.length - 1]);
+  return smoothed;
 }
 
 /**
@@ -236,6 +319,7 @@ function handleTouchEnd(e) {
 function handlePointerDown(e) {
   if (e.pointerType === 'pen' || e.pointerType === 'touch') {
     e.preventDefault();
+    drawingCanvas.setPointerCapture(e.pointerId);
     const mouseEvent = new MouseEvent('mousedown', {
       clientX: e.clientX,
       clientY: e.clientY
@@ -276,6 +360,7 @@ function handlePointerMove(e) {
 function handlePointerUp(e) {
   if (e.pointerType === 'pen' || e.pointerType === 'touch') {
     e.preventDefault();
+    drawingCanvas.releasePointerCapture(e.pointerId);
     const mouseEvent = new MouseEvent('mouseup', {});
     drawingCanvas.dispatchEvent(mouseEvent);
     
@@ -308,142 +393,45 @@ function redrawCanvas() {
 }
 
 /**
- * Рисует отдельный элемент на canvas
- * @param {Object} element - элемент для рисования
+ * Устанавливает полноэкранный режим для canvas
+ * @param {boolean} fullscreen - флаг полноэкранного режима
  */
-function drawElement(element) {
-  if (!drawingContext) return;
+function setFullscreenMode(fullscreen) {
+  const container = document.getElementById('drawing-canvas-container');
+  const modal = document.querySelector('.drawing-modal-content');
   
-  drawingContext.save();
-  
-  // Устанавливаем стиль в соответствии с элементом
-  drawingContext.strokeStyle = element.color;
-  drawingContext.lineWidth = element.lineWidth;
-  drawingContext.fillStyle = element.fill || 'transparent';
-  
-  switch (element.type) {
-    case 'freehand':
-      drawFreehand(element);
-      break;
-    case 'line':
-      drawLine(element);
-      break;
-    case 'rectangle':
-      drawRectangle(element);
-      break;
-    case 'ellipse':
-      drawEllipse(element);
-      break;
-    case 'text':
-      drawText(element);
-      break;
-    case 'arrow':
-      drawArrow(element);
-      break;
+  if (fullscreen) {
+    // Сохраняем старые размеры для возврата
+    container.dataset.originalWidth = container.style.width || '';
+    container.dataset.originalHeight = container.style.height || '';
+    modal.dataset.originalWidth = modal.style.width || '';
+    modal.dataset.originalHeight = modal.style.height || '';
+    
+    // Устанавливаем полноэкранный режим
+    modal.style.width = '95vw';
+    modal.style.height = '90vh';
+    modal.style.maxWidth = '100%';
+    modal.style.maxHeight = '100%';
+    container.style.width = '100%';
+    container.style.height = 'calc(100% - 120px)'; // Учитываем высоту панели инструментов
+  } else {
+    // Восстанавливаем исходные размеры
+    modal.style.width = modal.dataset.originalWidth || '80%';
+    modal.style.height = modal.dataset.originalHeight || '80vh';
+    modal.style.maxWidth = '900px';
+    modal.style.maxHeight = '700px';
+    container.style.width = container.dataset.originalWidth || '';
+    container.style.height = container.dataset.originalHeight || '';
   }
   
-  drawingContext.restore();
+  // Обновляем размеры canvas и перерисовываем
+  resetCanvasSize();
 }
 
-/**
- * Рисует линию свободной формы
- * @param {Object} element - элемент для рисования
- */
-function drawFreehand(element) {
-  if (!element.points || element.points.length < 2) return;
-  
-  drawingContext.beginPath();
-  drawingContext.moveTo(element.points[0].x, element.points[0].y);
-  
-  for (let i = 1; i < element.points.length; i++) {
-    drawingContext.lineTo(element.points[i].x, element.points[i].y);
-  }
-  
-  drawingContext.stroke();
-}
-
-/**
- * Рисует прямую линию
- * @param {Object} element - элемент для рисования
- */
-function drawLine(element) {
-  drawingContext.beginPath();
-  drawingContext.moveTo(element.startX, element.startY);
-  drawingContext.lineTo(element.endX, element.endY);
-  drawingContext.stroke();
-}
-
-/**
- * Рисует прямоугольник
- * @param {Object} element - элемент для рисования
- */
-function drawRectangle(element) {
-  const width = element.endX - element.startX;
-  const height = element.endY - element.startY;
-  
-  if (element.fill !== 'transparent') {
-    drawingContext.fillRect(element.startX, element.startY, width, height);
-  }
-  
-  drawingContext.strokeRect(element.startX, element.startY, width, height);
-}
-
-/**
- * Рисует эллипс
- * @param {Object} element - элемент для рисования
- */
-function drawEllipse(element) {
-  const centerX = (element.startX + element.endX) / 2;
-  const centerY = (element.startY + element.endY) / 2;
-  const radiusX = Math.abs(element.endX - element.startX) / 2;
-  const radiusY = Math.abs(element.endY - element.startY) / 2;
-  
-  drawingContext.beginPath();
-  drawingContext.ellipse(centerX, centerY, radiusX, radiusY, 0, 0, 2 * Math.PI);
-  
-  if (element.fill !== 'transparent') {
-    drawingContext.fill();
-  }
-  
-  drawingContext.stroke();
-}
-
-/**
- * Рисует текст
- * @param {Object} element - элемент для рисования
- */
-function drawText(element) {
-  drawingContext.font = `${element.fontSize}px ${element.fontFamily}`;
-  drawingContext.fillStyle = element.color;
-  drawingContext.fillText(element.text, element.x, element.y);
-}
-
-/**
- * Рисует стрелку
- * @param {Object} element - элемент для рисования
- */
-function drawArrow(element) {
-  // Рисуем линию
-  drawingContext.beginPath();
-  drawingContext.moveTo(element.startX, element.startY);
-  drawingContext.lineTo(element.endX, element.endY);
-  drawingContext.stroke();
-  
-  // Вычисляем угол для наконечника стрелки
-  const angle = Math.atan2(element.endY - element.startY, element.endX - element.startX);
-  const headLength = 15; // Длина наконечника стрелки
-  
-  // Рисуем наконечник стрелки
-  drawingContext.beginPath();
-  drawingContext.moveTo(element.endX, element.endY);
-  drawingContext.lineTo(
-    element.endX - headLength * Math.cos(angle - Math.PI / 6),
-    element.endY - headLength * Math.sin(angle - Math.PI / 6)
-  );
-  drawingContext.lineTo(
-    element.endX - headLength * Math.cos(angle + Math.PI / 6),
-    element.endY - headLength * Math.sin(angle + Math.PI / 6)
-  );
-  drawingContext.closePath();
-  drawingContext.fill();
-}
+// Экспортируем функции для использования в других файлах
+window.drawingCanvas = {
+  init: initDrawingCanvas,
+  clear: clearDrawingCanvas,
+  redraw: redrawCanvas,
+  setFullscreenMode: setFullscreenMode
+};
