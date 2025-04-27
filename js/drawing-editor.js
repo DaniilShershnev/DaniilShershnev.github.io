@@ -1,138 +1,56 @@
 /**
- * Модуль редактора рисования
- * Основной файл, координирующий работу всего редактора рисования
- * и его интеграцию с редактором LaTeX
+ * Вспомогательный файл для редактора рисования
+ * Чтобы избежать ошибок, вся функциональность перенесена в helpers.js
  */
 
-// Глобальная переменная для доступа к редактору рисования
-let drawingEditor;
-
-/**
- * Инициализация редактора рисования
- */
+// Предотвращаем ошибки, создавая пустую функцию
 function initDrawingEditor() {
-  // Инициализируем пользовательский интерфейс
-  if (typeof initDrawingUI === 'function') {
-    initDrawingUI();
-  } else {
-    console.warn('Функция initDrawingUI не определена');
-  }
+  console.log("Инициализация редактора рисования из drawing-editor.js (пустая функция)");
   
-  // Создаем объект редактора
-  drawingEditor = {
-    // Текущее состояние редактора
-    isOpen: false,
-    
-    // Открывает редактор рисования
-    open: function() {
-      this.isOpen = true;
+  // Убеждаемся, что функция openDrawingEditor доступна глобально
+  if (typeof window.openDrawingEditor !== 'function') {
+    window.openDrawingEditor = function() {
+      console.log("Вызов функции openDrawingEditor из drawing-editor.js");
+      
+      // Проверяем, существует ли модальное окно
+      if (!document.getElementById('drawing-modal')) {
+        console.log('Модальное окно редактора не найдено, создаем его');
+        if (typeof initDrawingUI === 'function') {
+          initDrawingUI();
+        } else {
+          console.error('Функция initDrawingUI не определена');
+          return;
+        }
+      }
       
       // Отображаем модальное окно
-      document.getElementById('drawing-modal').style.display = 'block';
-      
-      // Инициализируем canvas при открытии
-      if (typeof initDrawingCanvas === 'function') {
-        initDrawingCanvas();
+      const modal = document.getElementById('drawing-modal');
+      if (modal) {
+        modal.style.display = 'block';
+        
+        // Инициализируем canvas
+        if (typeof window.drawingCanvas?.init === 'function') {
+          window.drawingCanvas.init();
+        } else if (typeof initDrawingCanvas === 'function') {
+          initDrawingCanvas();
+        } else {
+          console.warn('Функции для инициализации canvas не найдены');
+        }
+        
+        // Инициализируем инструменты
+        if (typeof window.drawingTools?.init === 'function') {
+          window.drawingTools.init();
+        } else if (typeof initDrawingTools === 'function') {
+          initDrawingTools();
+        } else {
+          console.warn('Функции для инициализации инструментов рисования не найдены');
+        }
       } else {
-        console.warn('Функция initDrawingCanvas не определена');
+        console.error('Не удалось найти или создать модальное окно редактора');
       }
-      
-      // Инициализируем инструменты
-      if (typeof initDrawingTools === 'function') {
-        initDrawingTools();
-      } else {
-        console.warn('Функция initDrawingTools не определена');
-      }
-    },
-    
-    // Закрывает редактор рисования без сохранения
-    close: function() {
-      this.isOpen = false;
-      document.getElementById('drawing-modal').style.display = 'none';
-      
-      // Очищаем canvas
-      if (typeof clearDrawingCanvas === 'function') {
-        clearDrawingCanvas();
-      } else {
-        console.warn('Функция clearDrawingCanvas не определена');
-      }
-    },
-    
-    // Вставляет сгенерированный TikZ-код в редактор LaTeX
-    insertDrawing: function() {
-      // Получаем TikZ-код
-      if (typeof convertToTikZ !== 'function') {
-        console.warn('Функция convertToTikZ не определена');
-        return;
-      }
-      
-      const tikzCode = convertToTikZ();
-      
-      // Получаем позицию курсора в редакторе LaTeX
-      const cursor = editor.getCursor();
-      
-      // Формируем код с окружением tikzpicture
-      const fullCode = `\\begin{tikzpicture}\n${tikzCode}\n\\end{tikzpicture}`;
-      
-      // Вставляем в редактор
-      editor.replaceRange(fullCode, cursor);
-      
-      // Закрываем редактор рисования
-      this.close();
-      
-      // Обновляем статус
-      if (typeof updateStatus === 'function') {
-        updateStatus('Рисунок вставлен');
-      } else {
-        console.warn('Функция updateStatus не определена');
-      }
-    }
-  };
-  
-  // Устанавливаем обработчики событий
-  setupDrawingEditorEvents();
-  
-  // Делаем функцию открытия редактора доступной глобально
-  window.openDrawingEditor = function() {
-    if (drawingEditor) {
-      drawingEditor.open();
-    } else {
-      console.error('Редактор рисования не инициализирован');
-    }
-  };
-}
-
-/**
- * Устанавливает обработчики событий для редактора рисования
- */
-function setupDrawingEditorEvents() {
-  // Кнопка открытия редактора
-  const drawingBtn = document.getElementById('drawing-btn');
-  if (drawingBtn) {
-    drawingBtn.addEventListener('click', function() {
-      if (typeof openDrawingEditor === 'function') {
-        openDrawingEditor();
-      } else if (drawingEditor) {
-        drawingEditor.open();
-      } else {
-        console.error('Функция openDrawingEditor или объект drawingEditor не определены');
-      }
-    });
-  } else {
-    console.warn('Элемент drawing-btn не найден');
+    };
   }
 }
 
 // Экспортируем функцию в глобальную область видимости
 window.initDrawingEditor = initDrawingEditor;
-window.openDrawingEditor = function() {
-  if (drawingEditor) {
-    drawingEditor.open();
-  } else {
-    console.log('Инициализация редактора рисования...');
-    initDrawingEditor();
-    if (drawingEditor) {
-      drawingEditor.open();
-    }
-  }
-};
