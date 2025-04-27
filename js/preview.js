@@ -3,6 +3,35 @@
  * Отвечает за компиляцию LaTeX кода и отображение предпросмотра
  */
 
+// Создаем элемент стиля для взаимодействия с PDF
+const previewInteractionStyles = document.createElement('style');
+previewInteractionStyles.textContent = `
+  .pdf-interaction-highlight {
+    background-color: rgba(52, 152, 219, 0.1);
+    border: 1px dashed rgba(52, 152, 219, 0.5);
+    transition: background-color 0.2s, border 0.2s;
+  }
+  
+  #pdf-preview .pdf-paragraph,
+  #pdf-preview .pdf-section {
+    position: relative;
+    transition: background-color 0.2s, border 0.2s;
+  }
+`;
+
+// Добавляем стили в head документа
+document.head.appendChild(previewInteractionStyles);
+
+// Масштаб предпросмотра
+let scale = 1.0;
+
+// Остальной код файла...
+
+ /**
+ * Модуль предпросмотра и компиляции
+ * Отвечает за компиляцию LaTeX кода и отображение предпросмотра
+ */
+
 // Масштаб предпросмотра
 let scale = 1.0;
 
@@ -115,7 +144,7 @@ function parseLatexDocument(latexCode) {
  * Функция для рендеринга предпросмотра PDF
  * @param {Object} docData - объект с данными документа
  */
-function renderPdfPreview(docData) {
+function renderPdfPreview(docData){
   const preview = document.getElementById('pdf-preview');
   
   if (!preview) {
@@ -314,8 +343,60 @@ function renderPdfPreview(docData) {
       console.error('MathJax ошибка:', err);
     });
   }
+  setupPreviewInteraction(preview);
 }
-
+/**
+ * Настраивает взаимодействие с элементами превью
+ * @param {HTMLElement} previewElement - элемент превью
+ */
+function setupPreviewInteraction(previewElement) {
+  if (!previewElement) return;
+  
+  // Находим все интерактивные элементы превью
+  const paragraphs = previewElement.querySelectorAll('.pdf-paragraph');
+  const sections = previewElement.querySelectorAll('.pdf-section');
+  
+  // Добавляем data-атрибуты для облегчения идентификации
+  paragraphs.forEach((paragraph, index) => {
+    paragraph.setAttribute('data-paragraph-index', index);
+  });
+  
+  sections.forEach((section, index) => {
+    section.setAttribute('data-section-index', index);
+  });
+  
+  // Добавляем обработчики событий, если активен режим рисования на PDF
+  // Обработчики будут глобальными и их активность будет определяться состоянием PDFDrawing.isDrawingModeActive
+  
+  // Эти обработчики нужны для визуального отклика при наведении,
+  // реальная обработка кликов происходит через PDFInteractionLayer
+  previewElement.addEventListener('mouseover', function(event) {
+    if (!window.PDFDrawing || !window.PDFDrawing.isDrawingModeActive) return;
+    
+    const target = event.target;
+    
+    // Проверяем, является ли цель одним из интерактивных элементов
+    if (target.classList.contains('pdf-paragraph') || 
+        target.classList.contains('pdf-section')) {
+      
+      // Добавляем класс подсветки
+      target.classList.add('pdf-interaction-highlight');
+    }
+  });
+  
+  previewElement.addEventListener('mouseout', function(event) {
+    if (!window.PDFDrawing || !window.PDFDrawing.isDrawingModeActive) return;
+    
+    const target = event.target;
+    
+    // Удаляем класс подсветки при уходе курсора
+    if (target.classList.contains('pdf-paragraph') || 
+        target.classList.contains('pdf-section')) {
+      
+      target.classList.remove('pdf-interaction-highlight');
+    }
+  });
+}
 /**
  * Функция для рисования TikZ команд на канве
  * @param {CanvasRenderingContext2D} ctx - контекст канвы для рисования
