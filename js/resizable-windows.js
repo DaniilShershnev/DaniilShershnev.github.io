@@ -1,4 +1,21 @@
 /**
+ * Безопасное обновление редактора
+ */
+function safeRefreshEditor() {
+  try {
+    // Проверяем, что редактор существует и имеет метод refresh
+    if (window.editor && typeof window.editor.refresh === 'function') {
+      safeRefreshEditor();
+    } else if (typeof editor !== 'undefined' && typeof editor.refresh === 'function') {
+      editor.refresh();
+    }
+  } catch (e) {
+    console.warn('Не удалось обновить редактор:', e);
+  }
+}
+
+
+/**
  * Модуль для добавления возможности изменения размера панелей
  * и улучшения интерфейса редактора LaTeX
  */
@@ -83,7 +100,7 @@ function initResizablePanels() {
     
     // Обновляем размер редактора CodeMirror
     if (window.editor) {
-      window.editor.refresh();
+      safeRefreshEditor();
     }
   }
   
@@ -117,7 +134,7 @@ function initResizablePanels() {
     
     // Обновляем размер редактора CodeMirror
     if (window.editor) {
-      window.editor.refresh();
+      safeRefreshEditor();
     }
   });
   
@@ -203,7 +220,7 @@ function addFullscreenButton() {
       // Обновляем размер редактора CodeMirror
       if (window.editor) {
         setTimeout(() => {
-          window.editor.refresh();
+          safeRefreshEditor();
         }, 100);
       }
     }
@@ -218,13 +235,13 @@ function fixCodeMirrorSizes() {
   
   // Обновляем размеры редактора при полной загрузке страницы
   window.addEventListener('load', function() {
-    window.editor.refresh();
+    safeRefreshEditor();
   });
   
   // Устанавливаем таймаут для обновления размеров,
   // чтобы дать DOM полностью сформироваться
   setTimeout(() => {
-    window.editor.refresh();
+    safeRefreshEditor();
   }, 500);
 }
 
@@ -447,7 +464,7 @@ function safeRefreshEditor() {
   // Проверяем, что редактор существует и имеет метод refresh
   if (window.editor && typeof window.editor.refresh === 'function') {
     try {
-      window.editor.refresh();
+      safeRefreshEditor();
     } catch (e) {
       console.warn('Ошибка при обновлении редактора:', e);
     }
@@ -469,12 +486,12 @@ function safeRefreshEditor() {
 window.editor = editor;
 
 /**
- * Замените все вызовы window.editor.refresh() в resizable-windows.js
+ * Замените все вызовы safeRefreshEditor() в resizable-windows.js
  * на safeRefreshEditor()
  * 
  * Например, замените:
  * if (window.editor) {
- *   window.editor.refresh();
+ *   safeRefreshEditor();
  * }
  * 
  * На:
