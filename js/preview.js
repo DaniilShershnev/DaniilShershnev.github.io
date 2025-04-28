@@ -615,3 +615,94 @@ function setupPreviewEvents() {
 
 // Определяем глобальную функцию компиляции для доступа из других модулей
 window.compileLatex = compileLatex;
+/**
+ * Исправленный код для функции изменения размера PDF
+ * Добавьте этот код в конец файла js/preview.js
+ */
+
+// Исправление функции изменения масштаба PDF
+(function() {
+  console.log('Инициализация исправления масштабирования PDF...');
+  
+  // Убедимся, что переменная scale определена
+  if (typeof window.scale === 'undefined') {
+    window.scale = 1.0;
+  }
+  
+  // Обновляем функцию изменения масштаба
+  window.updateZoom = function() {
+    const preview = document.getElementById('pdf-preview');
+    if (preview) {
+      console.log('Обновление масштаба:', window.scale);
+      preview.style.transform = `scale(${window.scale})`;
+      preview.style.transformOrigin = 'top center';
+    }
+  };
+  
+  // Обновляем обработчики кнопок масштабирования
+  function setupZoomButtons() {
+    // Увеличение масштаба
+    const zoomInBtn = document.getElementById('zoom-in');
+    if (zoomInBtn) {
+      // Удаляем все предыдущие обработчики
+      const newZoomInBtn = zoomInBtn.cloneNode(true);
+      zoomInBtn.parentNode.replaceChild(newZoomInBtn, zoomInBtn);
+      
+      newZoomInBtn.addEventListener('click', function() {
+        console.log('Увеличение масштаба');
+        window.scale += 0.1;
+        window.updateZoom();
+      });
+    }
+    
+    // Уменьшение масштаба
+    const zoomOutBtn = document.getElementById('zoom-out');
+    if (zoomOutBtn) {
+      // Удаляем все предыдущие обработчики
+      const newZoomOutBtn = zoomOutBtn.cloneNode(true);
+      zoomOutBtn.parentNode.replaceChild(newZoomOutBtn, zoomOutBtn);
+      
+      newZoomOutBtn.addEventListener('click', function() {
+        console.log('Уменьшение масштаба');
+        if (window.scale > 0.3) {
+          window.scale -= 0.1;
+          window.updateZoom();
+        }
+      });
+    }
+  }
+  
+  // Устанавливаем обработчики при загрузке DOM
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', setupZoomButtons);
+  } else {
+    // DOM уже загружен
+    setupZoomButtons();
+  }
+  
+  // Добавляем кнопки "Сброс масштаба" для удобства
+  function addResetZoomButton() {
+    const zoomOutBtn = document.getElementById('zoom-out');
+    if (zoomOutBtn && !document.getElementById('reset-zoom')) {
+      const resetZoomBtn = document.createElement('button');
+      resetZoomBtn.id = 'reset-zoom';
+      resetZoomBtn.textContent = 'Сброс масштаба';
+      resetZoomBtn.title = 'Вернуть исходный масштаб';
+      
+      resetZoomBtn.addEventListener('click', function() {
+        window.scale = 1.0;
+        window.updateZoom();
+      });
+      
+      zoomOutBtn.parentNode.insertBefore(resetZoomBtn, zoomOutBtn.nextSibling);
+    }
+  }
+  
+  // Добавляем кнопку сброса масштаба при загрузке DOM
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', addResetZoomButton);
+  } else {
+    // DOM уже загружен
+    addResetZoomButton();
+  }
+})();
