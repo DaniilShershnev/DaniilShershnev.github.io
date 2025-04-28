@@ -1,3 +1,5 @@
+
+
 /**
  * pdf-drawing.js
  * Главный модуль для рисования на PDF превью
@@ -46,7 +48,57 @@ const PDFDrawing = {
     
     console.log('Модуль рисования на PDF инициализирован');
   },
+  /**
+ * Входит в режим рисования на PDF
+ */
+function enterDrawingMode() {
+  console.log('Вход в режим рисования на PDF');
   
+  // Устанавливаем флаг
+  PDFDrawing.isDrawingModeActive = true;
+  
+  // Изменяем стиль кнопки
+  const drawButton = document.getElementById('draw-on-pdf-btn');
+  if (drawButton) {
+    drawButton.classList.add('active');
+    drawButton.textContent = 'Отменить рисование';
+  }
+  
+  // Показываем инструкции
+  PDFInteractionLayer.activate();
+  
+  // Обновляем статус
+  if (typeof updateStatus === 'function') {
+    updateStatus('Выберите место в документе для добавления рисунка', 0);
+  }
+}
+
+/**
+ * Выходит из режима рисования на PDF
+ */
+function exitDrawingMode() {
+  console.log('Выход из режима рисования на PDF');
+  
+  // Сбрасываем флаг
+  PDFDrawing.isDrawingModeActive = false;
+  
+  // Изменяем стиль кнопки
+  const drawButton = document.getElementById('draw-on-pdf-btn');
+  if (drawButton) {
+    drawButton.classList.remove('active');
+    drawButton.textContent = 'Рисовать на PDF';
+  }
+  
+  // Скрываем инструкции и слой взаимодействия
+  PDFInteractionLayer.deactivate();
+  PDFDrawingOverlay.hide();
+  
+  // Обновляем статус
+  if (typeof updateStatus === 'function') {
+    updateStatus('Готово', 2000);
+  }
+}
+
   /**
    * Добавляет кнопку для рисования на PDF
    */
