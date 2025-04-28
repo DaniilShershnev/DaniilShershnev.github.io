@@ -23,8 +23,7 @@ function compileLatex() {
   
   if (loadingOverlay) {
     loadingOverlay.style.display = 'flex';
-  }
-  
+  }  
   if (statusElement) {
     statusElement.textContent = "Компиляция...";
   }
