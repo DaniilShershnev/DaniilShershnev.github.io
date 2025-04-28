@@ -1,4 +1,11 @@
 /**
+ * Проверяет, инициализирован ли UI редактора рисования
+ * @returns {boolean} true, если UI уже инициализирован
+ */
+function isDrawingUIInitialized() {
+  return document.getElementById('drawing-modal') !== null;
+}
+/**
  * Модуль пользовательского интерфейса редактора рисования
  * Отвечает за создание и управление UI элементами редактора рисования
  */
@@ -7,11 +14,17 @@ let isDrawingUIInitialized = false;
 /**
  * Инициализирует пользовательский интерфейс редактора рисования
  */
+/**
+ * Инициализирует пользовательский интерфейс редактора рисования
+ */
 function initDrawingUI() {
   // Если модальное окно уже существует, не создаем его повторно
-  if (document.getElementById('drawing-modal')) {
+  if (isDrawingUIInitialized()) {
+    console.log('UI редактора рисования уже инициализирован');
     return;
   }
+  
+  console.log('Инициализация UI редактора рисования');
   
   // Создаем модальное окно
   createDrawingModal();
@@ -19,8 +32,7 @@ function initDrawingUI() {
   // Устанавливаем обработчики событий
   setupDrawingUIEvents();
   
-  // Отмечаем, что UI инициализирован
-  isDrawingUIInitialized = true;
+  console.log('UI редактора рисования инициализирован');
 }
 
 /**
