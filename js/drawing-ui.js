@@ -4,24 +4,6 @@
  */
 let isDrawingUIInitialized = false;
 
-function initDrawingUI() {
-  // Если UI уже инициализирован, просто показываем его
-  if (isDrawingUIInitialized) {
-    const modal = document.getElementById('drawing-modal');
-    if (modal) {
-      modal.style.display = 'block';
-      return;
-    }
-  }
-  
-  // Иначе создаем UI с нуля
-  createDrawingModal();
-  setupDrawingUIEvents();
-  isDrawingUIInitialized = true;
-}
-// Объявим переменную для доступа к функции закрытия редактора
-let closeDrawingEditor;
-
 /**
  * Инициализирует пользовательский интерфейс редактора рисования
  */
@@ -36,6 +18,9 @@ function initDrawingUI() {
   
   // Устанавливаем обработчики событий
   setupDrawingUIEvents();
+  
+  // Отмечаем, что UI инициализирован
+  isDrawingUIInitialized = true;
 }
 
 /**
@@ -130,31 +115,30 @@ function createDrawingModal() {
       </div>
     </div>
   `;
-  modal.innerHTML = `
-  <div class="modal-content drawing-modal-content">
-    const styleElement = document.createElement('style');
-styleElement.textContent = `
-  .drawing-modal-content.pdf-mode {
-    border: 3px solid #3498db;
-  }
   
-  .drawing-mode-indicator {
-    background-color: #3498db;
-    color: white;
-    padding: 8px 12px;
-    border-radius: 4px;
-    position: absolute;
-    top: 10px;
-    right: 10px;
-    font-size: 14px;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-  }
-`;
-document.head.appendChild(styleElement);
-  </div>
-`;
   // Добавляем модальное окно в документ
   document.body.appendChild(modal);
+  
+  // Добавляем стили для PDF режима
+  const styleElement = document.createElement('style');
+  styleElement.textContent = `
+    .drawing-modal-content.pdf-mode {
+      border: 3px solid #3498db;
+    }
+    
+    .drawing-mode-indicator {
+      background-color: #3498db;
+      color: white;
+      padding: 8px 12px;
+      border-radius: 4px;
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      font-size: 14px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    }
+  `;
+  document.head.appendChild(styleElement);
 }
 
 /**
@@ -179,6 +163,15 @@ function setupDrawingUIEvents() {
   
   // Кнопка вставки
   document.getElementById('drawing-insert').addEventListener('click', function() {
+    // Проверяем, находимся ли в режиме рисования на PDF
+    if (typeof isDrawingEditorInPdfMode === 'function' && isDrawingEditorInPdfMode()) {
+      // В режиме рисования на PDF обработкой вставки занимается PDFInsertionHandler
+      if (typeof window.PDFInsertionHandler !== 'undefined') {
+        window.PDFInsertionHandler.insertDrawingToDocument();
+      }
+      return;
+    }
+    
     // Получаем TikZ-код
     if (typeof convertToTikZ !== 'function') {
       console.warn('Функция convertToTikZ не определена');
@@ -187,7 +180,7 @@ function setupDrawingUIEvents() {
     
     const tikzCode = convertToTikZ();
     
-    // Получаем позицию курсора в редакторе LaTeX
+    // Стандартное поведение - вставка в текущую позицию курсора
     const cursor = editor.getCursor();
     
     // Формируем код с окружением tikzpicture
@@ -226,42 +219,6 @@ function setupDrawingUIEvents() {
       }
     }
   });
-  // Кнопка вставки
-document.getElementById('drawing-insert').addEventListener('click', function() {
-  // Получаем TikZ-код
-  if (typeof convertToTikZ !== 'function') {
-    console.warn('Функция convertToTikZ не определена');
-    return;
-  }
-  
-  const tikzCode = convertToTikZ();
-  
-  // Проверяем, находимся ли в режиме рисования на PDF
-  if (typeof isDrawingEditorInPdfMode === 'function' && isDrawingEditorInPdfMode()) {
-    // В режиме рисования на PDF обработкой вставки занимается PDFInsertionHandler
-    return;
-  }
-  
-  // Стандартное поведение - вставка в текущую позицию курсора
-  const cursor = editor.getCursor();
-  
-  // Формируем код с окружением tikzpicture
-  const fullCode = `\\begin{tikzpicture}\n${tikzCode}\n\\end{tikzpicture}`;
-  
-  // Вставляем в редактор
-  editor.replaceRange(fullCode, cursor);
-  
-  // Закрываем редактор рисования
-  const modal = document.getElementById('drawing-modal');
-  if (modal) {
-    modal.style.display = 'none';
-  }
-  
-  // Обновляем статус
-  if (typeof updateStatus === 'function') {
-    updateStatus('Рисунок вставлен');
-  }
-});
 }
 
 // Экспортируем функции в глобальную область видимости
