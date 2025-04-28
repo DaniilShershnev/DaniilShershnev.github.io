@@ -160,3 +160,90 @@ function setupModalEvents() {
     });
   });
 }
+
+// Проверяем, что все необходимые функции доступны
+document.addEventListener('DOMContentLoaded', function() {
+  console.log('Проверка модулей рисования...');
+  
+  // Проверяем наличие необходимых функций
+  if (typeof window.initDrawingEditor !== 'function') {
+    console.error('Функция initDrawingEditor не определена!');
+  }
+  
+  if (typeof window.openDrawingEditor !== 'function') {
+    console.error('Функция openDrawingEditor не определена, создаем её');
+    
+    // Создаем глобальную функцию openDrawingEditor
+    window.openDrawingEditor = function() {
+      console.log('Вызов функции openDrawingEditor');
+      
+      // Проверяем, существует ли модальное окно рисования
+      if (!document.getElementById('drawing-modal')) {
+        console.log('Модальное окно рисования не найдено, инициализируем UI');
+        if (typeof window.initDrawingUI === 'function') {
+          window.initDrawingUI();
+        } else if (typeof initDrawingUI === 'function') {
+          initDrawingUI();
+        } else {
+          console.error('Функция initDrawingUI недоступна!');
+          alert('Ошибка: Модуль рисования не может быть инициализирован');
+          return;
+        }
+      }
+      
+      // Отображаем модальное окно
+      const modal = document.getElementById('drawing-modal');
+      if (modal) {
+        modal.style.display = 'block';
+        
+        // Инициализируем canvas
+        if (typeof window.drawingCanvas?.init === 'function') {
+          window.drawingCanvas.init();
+        } else if (typeof initDrawingCanvas === 'function') {
+          initDrawingCanvas();
+        } else {
+          console.warn('Не удалось инициализировать canvas для рисования');
+        }
+        
+        // Инициализируем инструменты
+        if (typeof window.drawingTools?.init === 'function') {
+          window.drawingTools.init();
+        } else if (typeof initDrawingTools === 'function') {
+          initDrawingTools();
+        } else {
+          console.warn('Не удалось инициализировать инструменты рисования');
+        }
+      } else {
+        console.error('Модальное окно рисования не найдено после инициализации!');
+        alert('Ошибка: Не удалось открыть редактор рисования');
+      }
+    };
+  }
+  
+  // Явно инициализируем редактор рисования
+  if (typeof window.initDrawingEditor === 'function') {
+    window.initDrawingEditor();
+    console.log('Редактор рисования инициализирован');
+  }
+  
+  // Убедимся, что обработчик кнопки рисования установлен
+  const drawingBtn = document.getElementById('drawing-btn');
+  if (drawingBtn) {
+    // Удаляем все предыдущие обработчики, чтобы избежать дублирования
+    const newBtn = drawingBtn.cloneNode(true);
+    drawingBtn.parentNode.replaceChild(newBtn, drawingBtn);
+    
+    // Добавляем обработчик события
+    newBtn.addEventListener('click', function() {
+      console.log('Кнопка рисования нажата');
+      if (typeof window.openDrawingEditor === 'function') {
+        window.openDrawingEditor();
+      } else {
+        console.error('Функция openDrawingEditor не определена');
+        alert('Ошибка: Функция редактора рисования недоступна');
+      }
+    });
+  } else {
+    console.warn('Кнопка рисования не найдена в DOM');
+  }
+});
