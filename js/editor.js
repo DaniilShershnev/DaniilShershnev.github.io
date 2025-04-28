@@ -269,3 +269,12 @@ document.addEventListener('DOMContentLoaded', function() {
 window.addEventListener('load', function() {
   adjustEditorSize();
 });
+// Обработчик для кнопки компиляции
+const compileBtn = document.getElementById('compile-btn');
+if (compileBtn) {
+    compileBtn.addEventListener('click', function() {
+        if (typeof window.compileLatex === 'function') {
+            window.compileLatex();
+        }
+    });
+}
