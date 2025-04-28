@@ -16,6 +16,26 @@ function safeRefreshEditor() {
 
 
 /**
+ * Безопасное обновление редактора CodeMirror
+ * Проверяет наличие редактора и его метода refresh перед вызовом
+ */
+function safeRefreshEditor() {
+  try {
+    // Проверяем доступность editor через window и напрямую
+    if (window.editor && typeof window.editor.refresh === 'function') {
+      safeRefreshEditor();
+    } else if (typeof editor !== 'undefined' && typeof editor.refresh === 'function') {
+      editor.refresh();
+    } else {
+      console.warn('CodeMirror editor не найден или не имеет метода refresh');
+    }
+  } catch (e) {
+    console.warn('Ошибка при обновлении редактора:', e);
+  }
+}
+
+
+/**
  * Модуль для добавления возможности изменения размера панелей
  * и улучшения интерфейса редактора LaTeX
  */
