@@ -580,34 +580,44 @@ function setFullscreenMode(fullscreen) {
   const container = document.getElementById('drawing-canvas-container');
   const modal = document.querySelector('.drawing-modal-content');
   
+  if (!container || !modal) {
+    console.error('Элементы для полноэкранного режима не найдены');
+    return;
+  }
+  
   if (fullscreen) {
-    // Сохраняем старые размеры для возврата
-    container.dataset.originalWidth = container.style.width || '';
-    container.dataset.originalHeight = container.style.height || '';
-    modal.dataset.originalWidth = modal.style.width || '';
-    modal.dataset.originalHeight = modal.style.height || '';
+    // Вместо прямого изменения стилей используем CSS-класс
+    modal.classList.add('fullscreen');
     
-    // Устанавливаем полноэкранный режим
-    modal.style.width = '95vw';
-    modal.style.height = '90vh';
-    modal.style.maxWidth = '100%';
-    modal.style.maxHeight = '100%';
-    container.style.width = '100%';
-    container.style.height = 'calc(100% - 120px)'; // Учитываем высоту панели инструментов
+    // Обновляем текст кнопки, если она существует
+    const fullscreenBtn = document.getElementById('drawing-fullscreen');
+    if (fullscreenBtn) {
+      fullscreenBtn.innerHTML = `
+        <svg viewBox="0 0 24 24" width="16" height="16">
+          <path d="M5,14H7V19H12V17H7V14M7,10V5H12V3H5V10H7M17,17H12V19H19V12H17V17M12,7H17V12H19V5H12V7Z" />
+        </svg>
+        Свернуть
+      `;
+    }
   } else {
-    // Восстанавливаем исходные размеры
-    modal.style.width = modal.dataset.originalWidth || '80%';
-    modal.style.height = modal.dataset.originalHeight || '80vh';
-    modal.style.maxWidth = '900px';
-    modal.style.maxHeight = '700px';
-    container.style.width = container.dataset.originalWidth || '';
-    container.style.height = container.dataset.originalHeight || '';
+    // Удаляем класс полноэкранного режима
+    modal.classList.remove('fullscreen');
+    
+    // Обновляем текст кнопки, если она существует
+    const fullscreenBtn = document.getElementById('drawing-fullscreen');
+    if (fullscreenBtn) {
+      fullscreenBtn.innerHTML = `
+        <svg viewBox="0 0 24 24" width="16" height="16">
+          <path d="M5,5H10V7H7V10H5V5M14,5H19V10H17V7H14V5M17,14H19V19H14V17H17V14M10,17V19H5V14H7V17H10Z" />
+        </svg>
+        Развернуть
+      `;
+    }
   }
   
   // Обновляем размеры canvas и перерисовываем
   resetCanvasSize();
 }
-
 // Экспортируем функции для использования в других файлах
 window.drawingCanvas = {
   init: initDrawingCanvas,
