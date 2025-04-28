@@ -1,6 +1,6 @@
 /**
- * pdf-interaction-layer.js
- * Модуль для взаимодействия с PDF предпросмотром
+ * Модифицированный модуль PDFInteractionLayer для правильной работы режима рисования на PDF
+ * Замените содержимое файла js/pdf-interaction-layer.js
  */
 
 const PDFInteractionLayer = {
@@ -61,6 +61,8 @@ const PDFInteractionLayer = {
     
     // Сохраняем ссылку на элемент
     this.element = layer;
+    
+    console.log('Слой взаимодействия с PDF создан');
   },
   
   /**
@@ -72,6 +74,8 @@ const PDFInteractionLayer = {
     // Обработчик клика для выбора позиции вставки
     this.element.addEventListener('click', (e) => {
       if (!this.isActive) return;
+      
+      console.log('Клик на PDF для выбора позиции вставки');
       
       // Получаем координаты клика относительно предпросмотра
       const previewElement = document.getElementById('pdf-preview');
@@ -123,6 +127,8 @@ const PDFInteractionLayer = {
       // Деактивируем слой взаимодействия
       this.deactivate();
     });
+    
+    console.log('Обработчики событий для слоя взаимодействия с PDF установлены');
   },
   
   /**
@@ -130,6 +136,8 @@ const PDFInteractionLayer = {
    */
   activate: function() {
     if (!this.element) return;
+    
+    console.log('Активация слоя взаимодействия с PDF');
     
     this.isActive = true;
     this.element.style.display = 'block';
@@ -144,6 +152,8 @@ const PDFInteractionLayer = {
   deactivate: function() {
     if (!this.element) return;
     
+    console.log('Деактивация слоя взаимодействия с PDF');
+    
     this.isActive = false;
     this.element.style.display = 'none';
     
@@ -155,11 +165,8 @@ const PDFInteractionLayer = {
    * Показывает инструкции для пользователя
    */
   showInstructions: function() {
-    // Проверяем, существуют ли уже инструкции
-    if (document.getElementById('pdf-drawing-instructions')) {
-      document.getElementById('pdf-drawing-instructions').style.display = 'flex';
-      return;
-    }
+    // Удаляем существующие инструкции, если они есть
+    this.hideInstructions();
     
     // Создаем элемент с инструкциями
     const instructions = document.createElement('div');
@@ -187,6 +194,8 @@ const PDFInteractionLayer = {
         window.PDFDrawing.exitDrawingMode();
       }
     });
+    
+    console.log('Инструкции для рисования на PDF отображены');
   },
   
   /**
@@ -195,7 +204,7 @@ const PDFInteractionLayer = {
   hideInstructions: function() {
     const instructions = document.getElementById('pdf-drawing-instructions');
     if (instructions) {
-      instructions.style.display = 'none';
+      instructions.remove();
     }
   }
 };
