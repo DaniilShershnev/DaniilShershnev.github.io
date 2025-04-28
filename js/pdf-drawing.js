@@ -102,31 +102,37 @@ function exitDrawingMode() {
   /**
    * Добавляет кнопку для рисования на PDF
    */
-  addDrawOnPDFButton: function() {
-    // Проверяем, существует ли уже такая кнопка
-    if (document.getElementById('draw-on-pdf-btn')) return;
-    
-    // Находим панель инструментов предпросмотра
-    const previewToolbar = document.querySelector('.preview-pane .toolbar');
-    if (!previewToolbar) {
-      console.error('Панель инструментов предпросмотра не найдена');
-      return;
+  function addDrawOnPDFButton() {
+  // Проверяем, существует ли уже такая кнопка
+  if (document.getElementById('draw-on-pdf-btn')) return;
+  
+  // Находим панель инструментов предпросмотра
+  const previewToolbar = document.querySelector('.preview-pane .toolbar');
+  if (!previewToolbar) {
+    console.error('Панель инструментов предпросмотра не найдена');
+    return;
+  }
+  
+  // Создаем кнопку
+  const drawButton = document.createElement('button');
+  drawButton.id = 'draw-on-pdf-btn';
+  drawButton.textContent = 'Рисовать на PDF';
+  drawButton.title = 'Нажмите, чтобы добавить рисунок в документ PDF';
+  
+  // Добавляем кнопку в панель инструментов
+  previewToolbar.appendChild(drawButton);
+  
+  // Добавляем обработчик события
+  drawButton.addEventListener('click', function() {
+    if (PDFDrawing.isDrawingModeActive) {
+      PDFDrawing.exitDrawingMode();
+    } else {
+      PDFDrawing.enterDrawingMode();
     }
-    
-    // Создаем кнопку
-    const drawButton = document.createElement('button');
-    drawButton.id = 'draw-on-pdf-btn';
-    drawButton.textContent = 'Рисовать на PDF';
-    drawButton.title = 'Нажмите, чтобы добавить рисунок в документ PDF';
-    
-    // Добавляем кнопку в панель инструментов
-    previewToolbar.appendChild(drawButton);
-    
-    // Добавляем обработчик события
-    drawButton.addEventListener('click', () => {
-      this.enterDrawingMode();
-    });
-  },
+  });
+  
+  console.log('Кнопка "Рисовать на PDF" добавлена');
+},
   
   /**
    * Устанавливает обработчики событий
