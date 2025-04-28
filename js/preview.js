@@ -1,38 +1,9 @@
 /**
- * Модуль предпросмотра и компиляции
+ * Исправленный модуль предпросмотра и компиляции
  * Отвечает за компиляцию LaTeX кода и отображение предпросмотра
  */
 
-// Создаем элемент стиля для взаимодействия с PDF
-const previewInteractionStyles = document.createElement('style');
-previewInteractionStyles.textContent = `
-  .pdf-interaction-highlight {
-    background-color: rgba(52, 152, 219, 0.1);
-    border: 1px dashed rgba(52, 152, 219, 0.5);
-    transition: background-color 0.2s, border 0.2s;
-  }
-  
-  #pdf-preview .pdf-paragraph,
-  #pdf-preview .pdf-section {
-    position: relative;
-    transition: background-color 0.2s, border 0.2s;
-  }
-`;
-
-// Добавляем стили в head документа
-document.head.appendChild(previewInteractionStyles);
-
-// Масштаб предпросмотра
-let scale = 1.0;
-
-// Остальной код файла...
-
- /**
- * Модуль предпросмотра и компиляции
- * Отвечает за компиляцию LaTeX кода и отображение предпросмотра
- */
-
-// Масштаб предпросмотра
+// Масштаб предпросмотра - объявлен только один раз
 let scale = 1.0;
 
 /**
@@ -58,7 +29,7 @@ function compileLatex() {
     statusElement.textContent = "Компиляция...";
   }
   
-  // Имитация процесса компиляции с задержкой (для демонстрации)
+  // Имитация процесса компиляции с задержкой
   setTimeout(() => {
     try {
       // Парсинг LaTeX кода
@@ -87,7 +58,7 @@ function compileLatex() {
         loadingOverlay.style.display = 'none';
       }
     }
-  }, 800);
+  }, 500);
 }
 
 /**
@@ -118,7 +89,6 @@ function parseLatexDocument(latexCode) {
   const tikzMatch = latexCode.match(/\\usepackage\{tikz\}/);
   if (!tikzMatch && latexCode.includes('\\begin{tikzpicture}')) {
     console.warn('Пакет TikZ не загружен в документе');
-    // Если пакет не загружен, добавляем предупреждение
     document.warning = 'Для отображения рисунков TikZ, добавьте \\usepackage{tikz} в преамбулу документа';
   }
   
@@ -130,11 +100,14 @@ function parseLatexDocument(latexCode) {
   document.sections = [];
   const sectionRegex = /\\section\{([^}]*)\}([\s\S]*?)(?=\\section\{|\\end\{document\})/g;
   let sectionMatch;
+  
+  let lastIndex = 0;
   while ((sectionMatch = sectionRegex.exec(latexCode)) !== null) {
     document.sections.push({
       title: sectionMatch[1],
       content: sectionMatch[2]
     });
+    lastIndex = sectionRegex.lastIndex;
   }
   
   return document;
@@ -144,7 +117,7 @@ function parseLatexDocument(latexCode) {
  * Функция для рендеринга предпросмотра PDF
  * @param {Object} docData - объект с данными документа
  */
-function renderPdfPreview(docData){
+function renderPdfPreview(docData) {
   const preview = document.getElementById('pdf-preview');
   
   if (!preview) {
@@ -187,7 +160,7 @@ function renderPdfPreview(docData){
         const canvasId = 'tikz-canvas-' + Math.random().toString(36).substring(2, 15);
         
         // Формируем HTML с канвой для рисунка
-        const html = `
+        return `
           <div class="pdf-figure">
             <div class="tikz-container">
               <canvas id="${canvasId}" width="500" height="300" style="border:1px solid #ddd; max-width:100%;"></canvas>
@@ -195,53 +168,6 @@ function renderPdfPreview(docData){
             <div class="pdf-caption">TikZ-рисунок</div>
           </div>
         `;
-        
-        // Добавляем функцию для рендеринга рисунка после загрузки страницы
-        setTimeout(() => {
-          // Получаем канву и ее контекст
-          const canvas = document.getElementById(canvasId);
-          if (!canvas) return;
-          
-          const ctx = canvas.getContext('2d');
-          if (!ctx) return;
-          
-          // Очищаем канву
-          ctx.clearRect(0, 0, canvas.width, canvas.height);
-          
-          // Устанавливаем белый фон
-          ctx.fillStyle = 'white';
-          ctx.fillRect(0, 0, canvas.width, canvas.height);
-          
-          // Масштабируем и центрируем координаты
-          ctx.translate(canvas.width / 2, canvas.height / 2);
-          ctx.scale(30, 30); // Масштаб для TikZ координат
-          
-          // Рисуем основные фигуры из TikZ-кода
-          drawTikzToCanvas(ctx, tikzCode);
-        }, 100);
-        
-        return html;
-      });
-      
-      // Обработка изображений
-      content = content.replace(/\\begin\{figure\}[\s\S]*?\\includegraphics\[width=([^\]]*?)\\textwidth\]\{([^\}]*?)\}[\s\S]*?\\caption\{([^\}]*?)\}[\s\S]*?\\end\{figure\}/g, function(match, width, imageName, caption) {
-        // Ищем изображение в сохраненных
-        if (typeof uploadedImages !== 'undefined') {
-          const image = uploadedImages.find(img => img.name === imageName);
-          if (image && image.data) {
-            return `<div class="pdf-figure">
-              <img src="${image.data}" style="max-width: ${parseFloat(width) * 100}%; margin: 10px 0;">
-              <div class="pdf-caption">Рис.: ${caption}</div>
-            </div>`;
-          }
-        }
-        
-        return `<div class="pdf-figure">
-          <div style="border: 1px dashed #ccc; padding: 20px; text-align: center; color: #999;">
-            Изображение "${imageName}" не найдено
-          </div>
-          <div class="pdf-caption">Рис.: ${caption}</div>
-        </div>`;
       });
       
       // Обработка списков itemize
@@ -296,7 +222,7 @@ function renderPdfPreview(docData){
       const canvasId = 'tikz-canvas-' + Math.random().toString(36).substring(2, 15);
       
       // Формируем HTML с канвой для рисунка
-      const html = `
+      return `
         <div class="pdf-figure">
           <div class="tikz-container">
             <canvas id="${canvasId}" width="500" height="300" style="border:1px solid #ddd; max-width:100%;"></canvas>
@@ -304,37 +230,18 @@ function renderPdfPreview(docData){
           <div class="pdf-caption">TikZ-рисунок</div>
         </div>
       `;
-      
-      // Добавляем функцию для рендеринга рисунка после загрузки страницы
-      setTimeout(() => {
-        // Получаем канву и ее контекст
-        const canvas = document.getElementById(canvasId);
-        if (!canvas) return;
-        
-        const ctx = canvas.getContext('2d');
-        if (!ctx) return;
-        
-        // Очищаем канву
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        
-        // Устанавливаем белый фон
-        ctx.fillStyle = 'white';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        
-        // Масштабируем и центрируем координаты
-        ctx.translate(canvas.width / 2, canvas.height / 2);
-        ctx.scale(30, 30); // Масштаб для TikZ координат
-        
-        // Рисуем основные фигуры из TikZ-кода
-        drawTikzToCanvas(ctx, tikzCode);
-      }, 100);
-      
-      return html;
     });
     
-    html += `<div class="pdf-paragraph">${content}</div>`;
+    // Разбиваем основной текст на абзацы
+    const paragraphs = content.split('\n\n');
+    paragraphs.forEach(paragraph => {
+      if (paragraph.trim()) {
+        html += `<div class="pdf-paragraph">${paragraph.trim()}</div>`;
+      }
+    });
   }
   
+  // Устанавливаем HTML
   preview.innerHTML = html;
   
   // Запускаем MathJax для рендеринга формул
@@ -343,194 +250,6 @@ function renderPdfPreview(docData){
       console.error('MathJax ошибка:', err);
     });
   }
-  setupPreviewInteraction(preview);
-}
-/**
- * Настраивает взаимодействие с элементами превью
- * @param {HTMLElement} previewElement - элемент превью
- */
-function setupPreviewInteraction(previewElement) {
-  if (!previewElement) return;
-  
-  // Находим все интерактивные элементы превью
-  const paragraphs = previewElement.querySelectorAll('.pdf-paragraph');
-  const sections = previewElement.querySelectorAll('.pdf-section');
-  
-  // Добавляем data-атрибуты для облегчения идентификации
-  paragraphs.forEach((paragraph, index) => {
-    paragraph.setAttribute('data-paragraph-index', index);
-  });
-  
-  sections.forEach((section, index) => {
-    section.setAttribute('data-section-index', index);
-  });
-  
-  // Добавляем обработчики событий, если активен режим рисования на PDF
-  // Обработчики будут глобальными и их активность будет определяться состоянием PDFDrawing.isDrawingModeActive
-  
-  // Эти обработчики нужны для визуального отклика при наведении,
-  // реальная обработка кликов происходит через PDFInteractionLayer
-  previewElement.addEventListener('mouseover', function(event) {
-    if (!window.PDFDrawing || !window.PDFDrawing.isDrawingModeActive) return;
-    
-    const target = event.target;
-    
-    // Проверяем, является ли цель одним из интерактивных элементов
-    if (target.classList.contains('pdf-paragraph') || 
-        target.classList.contains('pdf-section')) {
-      
-      // Добавляем класс подсветки
-      target.classList.add('pdf-interaction-highlight');
-    }
-  });
-  
-  previewElement.addEventListener('mouseout', function(event) {
-    if (!window.PDFDrawing || !window.PDFDrawing.isDrawingModeActive) return;
-    
-    const target = event.target;
-    
-    // Удаляем класс подсветки при уходе курсора
-    if (target.classList.contains('pdf-paragraph') || 
-        target.classList.contains('pdf-section')) {
-      
-      target.classList.remove('pdf-interaction-highlight');
-    }
-  });
-}
-/**
- * Функция для рисования TikZ команд на канве
- * @param {CanvasRenderingContext2D} ctx - контекст канвы для рисования
- * @param {string} tikzCode - код TikZ
- */
-function drawTikzToCanvas(ctx, tikzCode) {
-  // Ищем команды рисования в TikZ-коде
-  const drawCommands = tikzCode.match(/\\draw\[[^\]]*\][^;]+;/g) || [];
-  
-  drawCommands.forEach(command => {
-    // Получаем атрибуты команды
-    const attributes = command.match(/\\draw\[([^\]]*)\]/);
-    const attributesStr = attributes ? attributes[1] : '';
-    
-    // Устанавливаем цвет
-    let color = 'black';
-    const colorMatch = attributesStr.match(/color=\{rgb,255:red,(\d+);green,(\d+);blue,(\d+)\}/);
-    if (colorMatch) {
-      color = `rgb(${colorMatch[1]}, ${colorMatch[2]}, ${colorMatch[3]})`;
-    }
-    
-    // Устанавливаем толщину линии
-    let lineWidth = 2;
-    const lineWidthMatch = attributesStr.match(/line width=(\d+)pt/);
-    if (lineWidthMatch) {
-      lineWidth = parseFloat(lineWidthMatch[1]) / 10;
-    }
-    
-    ctx.strokeStyle = color;
-    ctx.lineWidth = lineWidth;
-    
-    // Обработка эллипса
-    const ellipseMatch = command.match(/\((-?[\d\.]+),\s*(-?[\d\.]+)\)\s*ellipse\s*\((-?[\d\.]+)\s*and\s*(-?[\d\.]+)\)/);
-    if (ellipseMatch) {
-      const centerX = parseFloat(ellipseMatch[1]);
-      const centerY = parseFloat(ellipseMatch[2]);
-      const radiusX = parseFloat(ellipseMatch[3]);
-      const radiusY = parseFloat(ellipseMatch[4]);
-      
-      ctx.beginPath();
-      ctx.ellipse(centerX, -centerY, radiusX, radiusY, 0, 0, 2 * Math.PI);
-      ctx.stroke();
-      return;
-    }
-    
-    // Обработка линий
-    const lineMatch = command.match(/\((-?[\d\.]+),\s*(-?[\d\.]+)\)\s*--\s*\((-?[\d\.]+),\s*(-?[\d\.]+)\)/);
-    if (lineMatch) {
-      const x1 = parseFloat(lineMatch[1]);
-      const y1 = parseFloat(lineMatch[2]);
-      const x2 = parseFloat(lineMatch[3]);
-      const y2 = parseFloat(lineMatch[4]);
-      
-      ctx.beginPath();
-      ctx.moveTo(x1, -y1);
-      ctx.lineTo(x2, -y2);
-      ctx.stroke();
-      return;
-    }
-    
-    // Обработка прямоугольников
-    const rectMatch = command.match(/\((-?[\d\.]+),\s*(-?[\d\.]+)\)\s*rectangle\s*\((-?[\d\.]+),\s*(-?[\d\.]+)\)/);
-    if (rectMatch) {
-      const x1 = parseFloat(rectMatch[1]);
-      const y1 = parseFloat(rectMatch[2]);
-      const x2 = parseFloat(rectMatch[3]);
-      const y2 = parseFloat(rectMatch[4]);
-      
-      ctx.beginPath();
-      ctx.rect(x1, -y1, x2 - x1, -(y2 - y1));
-      ctx.stroke();
-      return;
-    }
-    
-    // Обработка стрелок
-    if (attributesStr.includes('->,')) {
-      const arrowMatch = command.match(/\((-?[\d\.]+),\s*(-?[\d\.]+)\)\s*--\s*\((-?[\d\.]+),\s*(-?[\d\.]+)\)/);
-      if (arrowMatch) {
-        const x1 = parseFloat(arrowMatch[1]);
-        const y1 = parseFloat(arrowMatch[2]);
-        const x2 = parseFloat(arrowMatch[3]);
-        const y2 = parseFloat(arrowMatch[4]);
-        
-        // Рисуем линию
-        ctx.beginPath();
-        ctx.moveTo(x1, -y1);
-        ctx.lineTo(x2, -y2);
-        ctx.stroke();
-        
-        // Рисуем наконечник стрелки
-        const angle = Math.atan2(-(y2 - y1), x2 - x1);
-        const headLength = lineWidth * 4;
-        
-        ctx.beginPath();
-        ctx.moveTo(x2, -y2);
-        ctx.lineTo(
-          x2 - headLength * Math.cos(angle - Math.PI / 6),
-          -y2 - headLength * Math.sin(angle - Math.PI / 6)
-        );
-        ctx.lineTo(
-          x2 - headLength * Math.cos(angle + Math.PI / 6),
-          -y2 - headLength * Math.sin(angle + Math.PI / 6)
-        );
-        ctx.closePath();
-        ctx.fillStyle = color;
-        ctx.fill();
-        return;
-      }
-    }
-    
-    // Обработка свободной формы (path)
-    const pathMatch = command.match(/\((-?[\d\.]+),\s*(-?[\d\.]+)\)((?:\s*--\s*\([-\d\.]+,\s*[-\d\.]+\))+)/);
-    if (pathMatch) {
-      const startX = parseFloat(pathMatch[1]);
-      const startY = parseFloat(pathMatch[2]);
-      const pathStr = pathMatch[3];
-      
-      const points = pathStr.match(/\((-?[\d\.]+),\s*(-?[\d\.]+)\)/g) || [];
-      
-      ctx.beginPath();
-      ctx.moveTo(startX, -startY);
-      
-      points.forEach(point => {
-        const coords = point.match(/\((-?[\d\.]+),\s*(-?[\d\.]+)\)/);
-        if (coords) {
-          const x = parseFloat(coords[1]);
-          const y = parseFloat(coords[2]);
-          ctx.lineTo(x, -y);
-        }
-      });
-      
-      ctx.stroke();
-    }
-  });
 }
 
 /**
@@ -540,169 +259,12 @@ function updateZoom() {
   const preview = document.getElementById('pdf-preview');
   if (preview) {
     preview.style.transform = `scale(${scale})`;
+    preview.style.transformOrigin = 'top center';
   }
-}
-
-/**
- * Настройка обработчиков событий для предпросмотра
- */
-function setupPreviewEvents() {
-  // Кнопка компиляции
-  const compileBtn = document.getElementById('compile-btn');
-  if (compileBtn) {
-    compileBtn.addEventListener('click', compileLatex);
-  }
-  
-  // Увеличение масштаба
-  const zoomInBtn = document.getElementById('zoom-in');
-  if (zoomInBtn) {
-    zoomInBtn.addEventListener('click', function() {
-      scale += 0.1;
-      updateZoom();
-    });
-  }
-  
-  // Уменьшение масштаба
-  const zoomOutBtn = document.getElementById('zoom-out');
-  if (zoomOutBtn) {
-    zoomOutBtn.addEventListener('click', function() {
-      if (scale > 0.5) {
-        scale -= 0.1;
-        updateZoom();
-      }
-    });
-  }
-  
-  // Загрузка PDF
-  const downloadBtn = document.getElementById('download-pdf');
-  if (downloadBtn) {
-    downloadBtn.addEventListener('click', function() {
-      alert('PDF файл успешно скомпилирован и готов к скачиванию.\nВ реальном приложении здесь будет загрузка настоящего PDF файла.');
-    });
-  }
-  
-  // Справка
-  const helpBtn = document.getElementById('help-btn');
-  if (helpBtn) {
-    helpBtn.addEventListener('click', function() {
-      alert('Справка по LaTeX:\n\n' + 
-        '- Используйте кнопки панели инструментов для вставки типовых элементов\n' +
-        '- Нажмите Tab после ввода выражения вида a/b для автоматического преобразования в дробь\n' +
-        '- Создавайте собственные умные макросы через меню "Умные макросы"\n' +
-        '- В меню "Умные макросы" доступны категории: Математика, Структура, Форматирование и Окружения\n' +
-        '- Управляйте файлами через меню "Файлы"\n' +
-        '- Настраивайте автокомпиляцию и автосохранение в настройках\n' +
-        '- Для создания рисунка используйте кнопку "Рисование" или введите "\\draw" и нажмите Tab\n' +
-        '- Нажмите Ctrl+Enter для компиляции документа');
-    });
-  }
-  // Диспетчеризация событий компиляции
-  const originalCompileLatex = compileLatex;
-  compileLatex = function() {
-    // Генерируем событие перед компиляцией
-    document.dispatchEvent(new CustomEvent('before-latex-compile'));
-    
-    // Вызываем оригинальную функцию компиляции
-    const result = originalCompileLatex.apply(this, arguments);
-    
-    // После небольшой задержки, диспетчеризируем событие завершения компиляции
-    setTimeout(() => {
-      document.dispatchEvent(new CustomEvent('after-latex-compile'));
-    }, 1000); // Задержка для завершения рендеринга
-    
-    return result;
 }
 
 // Определяем глобальную функцию компиляции для доступа из других модулей
 window.compileLatex = compileLatex;
-/**
- * Исправленный код для функции изменения размера PDF
- * Добавьте этот код в конец файла js/preview.js
- */
-
-// Исправление функции изменения масштаба PDF
-(function() {
-  console.log('Инициализация исправления масштабирования PDF...');
-  
-  // Убедимся, что переменная scale определена
-  if (typeof window.scale === 'undefined') {
-    window.scale = 1.0;
-  }
-  
-  // Обновляем функцию изменения масштаба
-  window.updateZoom = function() {
-    const preview = document.getElementById('pdf-preview');
-    if (preview) {
-      console.log('Обновление масштаба:', window.scale);
-      preview.style.transform = `scale(${window.scale})`;
-      preview.style.transformOrigin = 'top center';
-    }
-  };
-  
-  // Обновляем обработчики кнопок масштабирования
-  function setupZoomButtons() {
-    // Увеличение масштаба
-    const zoomInBtn = document.getElementById('zoom-in');
-    if (zoomInBtn) {
-      // Удаляем все предыдущие обработчики
-      const newZoomInBtn = zoomInBtn.cloneNode(true);
-      zoomInBtn.parentNode.replaceChild(newZoomInBtn, zoomInBtn);
-      
-      newZoomInBtn.addEventListener('click', function() {
-        console.log('Увеличение масштаба');
-        window.scale += 0.1;
-        window.updateZoom();
-      });
-    }
-    
-    // Уменьшение масштаба
-    const zoomOutBtn = document.getElementById('zoom-out');
-    if (zoomOutBtn) {
-      // Удаляем все предыдущие обработчики
-      const newZoomOutBtn = zoomOutBtn.cloneNode(true);
-      zoomOutBtn.parentNode.replaceChild(newZoomOutBtn, zoomOutBtn);
-      
-      newZoomOutBtn.addEventListener('click', function() {
-        console.log('Уменьшение масштаба');
-        if (window.scale > 0.3) {
-          window.scale -= 0.1;
-          window.updateZoom();
-        }
-      });
-    }
-  }
-  
-  // Устанавливаем обработчики при загрузке DOM
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', setupZoomButtons);
-  } else {
-    // DOM уже загружен
-    setupZoomButtons();
-  }
-  
-  // Добавляем кнопки "Сброс масштаба" для удобства
-  function addResetZoomButton() {
-    const zoomOutBtn = document.getElementById('zoom-out');
-    if (zoomOutBtn && !document.getElementById('reset-zoom')) {
-      const resetZoomBtn = document.createElement('button');
-      resetZoomBtn.id = 'reset-zoom';
-      resetZoomBtn.textContent = 'Сброс масштаба';
-      resetZoomBtn.title = 'Вернуть исходный масштаб';
-      
-      resetZoomBtn.addEventListener('click', function() {
-        window.scale = 1.0;
-        window.updateZoom();
-      });
-      
-      zoomOutBtn.parentNode.insertBefore(resetZoomBtn, zoomOutBtn.nextSibling);
-    }
-  }
-  
-  // Добавляем кнопку сброса масштаба при загрузке DOM
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', addResetZoomButton);
-  } else {
-    // DOM уже загружен
-    addResetZoomButton();
-  }
-})();
+window.parseLatexDocument = parseLatexDocument;
+window.renderPdfPreview = renderPdfPreview;
+window.updateZoom = updateZoom;
