@@ -440,6 +440,47 @@ function addStylesIfNeeded() {
   }
 }
 
+/**
+ * Модифицированная функция для проверки доступности редактора
+ */
+function safeRefreshEditor() {
+  // Проверяем, что редактор существует и имеет метод refresh
+  if (window.editor && typeof window.editor.refresh === 'function') {
+    try {
+      window.editor.refresh();
+    } catch (e) {
+      console.warn('Ошибка при обновлении редактора:', e);
+    }
+  } else if (editor && typeof editor.refresh === 'function') {
+    // Проверяем на случай, если editor существует, но не привязан к window
+    try {
+      editor.refresh();
+    } catch (e) {
+      console.warn('Ошибка при обновлении редактора:', e);
+    }
+  }
+}
+
+/**
+ * Экспортируем редактор в глобальную область
+ * Добавьте эти строки в конец функции initEditor в файле editor.js
+ */
+// В функции initEditor после создания редактора добавьте:
+window.editor = editor;
+
+/**
+ * Замените все вызовы window.editor.refresh() в resizable-windows.js
+ * на safeRefreshEditor()
+ * 
+ * Например, замените:
+ * if (window.editor) {
+ *   window.editor.refresh();
+ * }
+ * 
+ * На:
+ * safeRefreshEditor();
+ */
+
 // Инициализируем улучшения при загрузке страницы
 document.addEventListener('DOMContentLoaded', initInterfaceImprovements);
 
